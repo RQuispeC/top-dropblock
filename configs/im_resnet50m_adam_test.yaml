@@ -1,0 +1,35 @@
+model:
+  name: 'resnet50m_ls_neck'
+  load_weights: 'log/resnet50m_ls_neck_market1501_triplet/model.pth.tar-180'
+
+data:
+  type: 'image'
+  sources: ['market1501']
+  targets: ['market1501']
+  height: 256
+  width: 128
+  combineall: False
+  transforms: ['random_flip', 'random_crop', 'random_erase']
+  save_dir: 'log/resnet50m_ls_neck_market1501_triplet'
+
+sampler:
+  train_sampler: 'RandomIdentitySampler'
+
+loss:
+  name: 'triplet'
+  softmax:
+    label_smooth: True
+  triplet:
+    weight_t: 1.0
+    weight_x: 1.0
+
+test:
+  batch_size: 64
+  dist_metric: 'cosine'
+  normalize_feature: False
+  evaluate: False
+  eval_freq: 60
+  rerank: False
+  visactmap: True
+  visrank: False
+

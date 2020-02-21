@@ -1,0 +1,39 @@
+model:
+  name: 'fgnet_2_3_ls_neck'
+  pretrained: True
+
+data:
+  type: 'image'
+  sources: ['market1501']
+  targets: ['market1501']
+  height: 256
+  width: 128
+  combineall: False
+  transforms: ['random_flip', 'random_crop', 'random_erase']
+  save_dir: 'log/fgnet_2_3_ls_neck_market1501_softmax_npairs'
+
+sampler:
+  train_sampler: 'RandomIdentitySampler'
+
+loss:
+  name: 'softmax_npairs'
+  softmax:
+    label_smooth: True
+train:
+  optim: 'adam'
+  lr: 0.0003
+  max_epoch: 180
+  batch_size: 32 
+  fixbase_epoch: 10
+  open_layers: ['part_weighters', 'part_feature_generators', 'classifier_global']
+  lr_scheduler: 'single_step'
+  stepsize: [60]
+
+test:
+  batch_size: 32
+  dist_metric: 'euclidean'
+  normalize_feature: False
+  evaluate: False
+  eval_freq: 60 
+  rerank: False
+  visactmap: False

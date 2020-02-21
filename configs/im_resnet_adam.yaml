@@ -1,0 +1,43 @@
+model:
+  name: 'resnet50_ls'
+  pretrained: True
+
+data:
+  type: 'image'
+  sources: ['market1501']
+  targets: ['market1501']
+  height: 256
+  width: 128
+  combineall: False
+  transforms: ['random_flip', 'random_crop', 'random_erase']
+  save_dir: 'log/resnet50_ls_market1501_softmax_triplet_neck'
+
+sampler:
+  train_sampler: 'RandomIdentitySampler'
+
+loss:
+  name: 'triplet'
+  softmax:
+    label_smooth: True
+  triplet:
+    weight_t: 1.0
+    weight_x: 1.0
+
+train:
+  optim: 'adam'
+  lr: 0.0003
+  max_epoch: 180
+  batch_size: 32 
+  fixbase_epoch: 10
+  open_layers: ['classifier']
+  lr_scheduler: 'single_step'
+  stepsize: [60]
+
+test:
+  batch_size: 300
+  dist_metric: 'euclidean'
+  normalize_feature: False
+  evaluate: False
+  eval_freq: 60 
+  rerank: False
+  visactmap: False

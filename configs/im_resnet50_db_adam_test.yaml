@@ -1,0 +1,31 @@
+model:
+  name: 'resnet50_bd_neck_botdropfeat_doubot'
+  load_weights: 'log/resnet50_bd_neck_botdropfeat_doubot_dukemtmcreid_triplet_dropbatch_dropbotfeatures_topdrop_0/model.pth.tar-270'
+
+data:
+  type: 'image'
+  sources: ['dukemtmcreid']
+  targets: ['dukemtmcreid']
+  height: 384
+  width: 128
+  combineall: False
+  transforms: ['random_flip', 'random_crop', 'random_erase']
+  save_dir: 'log/resnet50_bd_neck_botdropfeat_doubot_dukemtmcreid_triplet_dropbatch_dropbotfeatures_topdrop_0'
+
+sampler:
+  train_sampler: 'RandomIdentitySampler'
+
+test:
+  batch_size: 600
+  dist_metric: 'cosine'
+  normalize_feature: False
+  evaluate: True
+  eval_freq: 60
+  rerank: False
+  visactmap: False
+  visrank: False
+  visrankactiv: False
+  visrank_topk: 5
+  visrankactivthr: True
+  maskthr: 0.35
+

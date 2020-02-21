@@ -1,0 +1,1 @@
+python3 main.py --root /home/quispe/Documents/re-identification/code/datasets --gpu-devices 0 --config-file configs/im_fgnet_adam.yaml

@@ -1,0 +1,51 @@
+model:
+  name: 'fgnet_2_2_resnet50m_ls_neck_fc_parts'
+  pretrained: True
+
+data:
+  type: 'image'
+  sources: ['market1501']
+  targets: ['market1501']
+  height: 256
+  width: 128
+  combineall: False
+  transforms: ['random_flip', 'random_crop', 'random_erase']
+  save_dir: 'log/fgnet_2_2_resnet50m_ls_neck_fc_parts_market1501_triplet_npairs_separate_nomask_partfeature_1024_avg_240epochs'
+
+sampler:
+  train_sampler: 'RandomIdentitySampler'
+
+loss:
+  name: 'triplet_npairs_softmax_separate'
+  softmax:
+    label_smooth: True
+  triplet:
+    weight_t: 1.0
+    weight_x: 1.0
+    weight_x_parts: 1.0
+    weight_n: 1.0
+  npairs:
+    margin_sasc: 0.3
+    margin_sadc: 0.2
+    margin_dasc: 0.4
+  separate:
+    weight_separate: 0.1
+
+train:
+  optim: 'adam'
+  lr: 0.0003
+  max_epoch: 240
+  batch_size: 32
+  fixbase_epoch: 10
+  open_layers: ['part_weighters', 'part_feature_generators', 'classifier_global', 'bottleneck', 'fc_fuse', 'classifier_parts']
+  lr_scheduler: 'multi_step'
+  stepsize: [60, 120]
+
+test:
+  batch_size: 32
+  dist_metric: 'euclidean'
+  normalize_feature: False
+  evaluate: False
+  eval_freq: 30
+  rerank: False
+  visactmap: False
