@@ -9,7 +9,6 @@ from .densenet import *
 from .inceptionresnetv2 import *
 from .inceptionv4 import *
 from .xception import *
-from .msrn import *
 
 from .nasnet import *
 from .mobilenetv2 import *
@@ -22,42 +21,16 @@ from .hacnn import *
 from .pcb import *
 from .mlfn import *
 from .osnet import *
-from .fgnet import *
 
+from .bdnet import *
 
 __model_factory = {
     # image classification models
     'resnet18': resnet18,
     'resnet34': resnet34,
     'resnet50': resnet50,
-    'resnet50_bd': resnet50_bd,
-    'resnet50_bd_neck': resnet50_bd_neck,
-    'resnet50_bd_botdropfeat': resnet50_bd_botdropfeat, 
-    'resnet50_bd_neck_botdropfeat': resnet50_bd_neck_botdropfeat, 
-    'resnet50_bd_botdropfeat_doubot': resnet50_bd_botdropfeat_doubot, 
-    'resnet50_bd_neck_botdropfeat_doubot': resnet50_bd_neck_botdropfeat_doubot,
-    'resnet50_bd_neck_botdropfeat_doubot_pose': resnet50_bd_neck_botdropfeat_doubot_pose,
-    'resnet50_bd_neck_botdropfeat_doubot_pose_13_fc_1': resnet50_bd_neck_botdropfeat_doubot_pose_13_fc_1,
-    'resnet50_bd_neck_botdropfeat_doubot_pose_13_conv_1': resnet50_bd_neck_botdropfeat_doubot_pose_13_conv_1,
-    'resnet50_bd_neck_botdropfeat_doubot_pose_13_conv_2': resnet50_bd_neck_botdropfeat_doubot_pose_13_conv_2,
-    'resnet50_bd_neck_botdropfeat_doubot_pose_13_fc_4': resnet50_bd_neck_botdropfeat_doubot_pose_13_fc_4,
-    'resnet50_bd_neck_botdropfeat_doubot_pose_13_fc_5': resnet50_bd_neck_botdropfeat_doubot_pose_13_fc_5,
-    'resnet50_bd_neck_botdropfeat_doubot_pose_13_fc_6': resnet50_bd_neck_botdropfeat_doubot_pose_13_fc_6,
-    'resnet50_bd_neck_botdropfeat_doubot_pose_13_fc_7': resnet50_bd_neck_botdropfeat_doubot_pose_13_fc_7,
-    'resnet50_bd_neck_botdropfeat_doubot_pose_13_fc_8': resnet50_bd_neck_botdropfeat_doubot_pose_13_fc_8,
-    'resnet50_bd_neck_botdropfeat_doubot_pose_13_fc_9': resnet50_bd_neck_botdropfeat_doubot_pose_13_fc_9,
-    'resnet50_bd_neck_botdropfeat_doubot_pose_13_fc_10': resnet50_bd_neck_botdropfeat_doubot_pose_13_fc_10,
-    'resnet50_bd_neck_botdropfeat_doubot_pose_13_fc_11': resnet50_bd_neck_botdropfeat_doubot_pose_13_fc_11,
-    'resnet50_bd_botdropfeat_inter': resnet50_bd_botdropfeat_inter,
-    'resnet50_bd_neck_botdropfeat_inter': resnet50_bd_neck_botdropfeat_inter,
-    'resnet50_bd_botdropfeat_doubot_inter': resnet50_bd_botdropfeat_doubot_inter,
-    'resnet50_bd_neck_botdropfeat_doubot_inter': resnet50_bd_neck_botdropfeat_doubot_inter,
-    'resnet50_ls': resnet50_ls,
     'resnet101': resnet101,
     'resnet152': resnet152,
-    'resnet50m': resnet50m,
-    'resnet50m_neck': resnet50m_neck,
-    'resnet50m_ls_neck': resnet50m_ls_neck,
     'resnext50_32x4d': resnext50_32x4d,
     'resnext101_32x8d': resnext101_32x8d,
     'resnet50_fc512': resnet50_fc512,
@@ -98,43 +71,11 @@ __model_factory = {
     'osnet_x0_5': osnet_x0_5,
     'osnet_x0_25': osnet_x0_25,
     'osnet_ibn_x1_0': osnet_ibn_x1_0,
-    'fgnet_1_2': fgnet_1_2,
-    'fgnet_1_3': fgnet_1_3,
-    'fgnet_1_4': fgnet_1_4,
-    'fgnet_2_2': fgnet_2_2,
-    'fgnet_2_3': fgnet_2_3,
-    'fgnet_2_4': fgnet_2_4,
-    'fgnet_2_5': fgnet_2_5,
-    'fgnet_2_2_resnet50m': fgnet_2_2_resnet50m,
-    'fgnet_2_3_resnet50m': fgnet_2_3_resnet50m,
-    'fgnet_2_4_resnet50m': fgnet_2_4_resnet50m,
-    'fgnet_2_2_resnet50m_neck': fgnet_2_2_resnet50m_neck,
-    'fgnet_2_3_resnet50m_neck': fgnet_2_3_resnet50m_neck,
-    'fgnet_2_4_resnet50m_neck': fgnet_2_4_resnet50m_neck,
-    'fgnet_2_2_ls_neck':fgnet_2_2_ls_neck,
-    'fgnet_2_3_ls_neck':fgnet_2_3_ls_neck,
-    'fgnet_2_2_resnet50m_ls_neck': fgnet_2_2_resnet50m_ls_neck,
-    'fgnet_2_3_resnet50m_ls_neck': fgnet_2_3_resnet50m_ls_neck,
-    'resnet50m_bd_ls_neck': resnet50m_bd_ls_neck,
-    'fgnet_2_2_resnet50m_ls_neck_fc_parts':fgnet_2_2_resnet50m_ls_neck_fc_parts,
-    'fgnet_2_3_resnet50m_ls_neck_fc_parts':fgnet_2_3_resnet50m_ls_neck_fc_parts,
-    'fgnet_2_4_resnet50m_ls_neck_fc_parts':fgnet_2_4_resnet50m_ls_neck_fc_parts,
-    'fgnet_1_1_resnet50m_ls_neck_fc_parts':fgnet_1_1_resnet50m_ls_neck_fc_parts,
-    'fgnet_1_2_resnet50m_ls_neck_fc_parts':fgnet_1_2_resnet50m_ls_neck_fc_parts,
-    'fgnet_1_3_resnet50m_ls_neck_fc_parts':fgnet_1_3_resnet50m_ls_neck_fc_parts,
-    'fgnet_1_1_resnet50m_ls_neck_fc_parts_bd':fgnet_1_1_resnet50m_ls_neck_fc_parts_bd,
-    'fgnet_1_2_resnet50m_ls_neck_fc_parts_bd':fgnet_1_2_resnet50m_ls_neck_fc_parts_bd,
-    'fgnet_3_2_resnet50m_ls_neck_fc_parts':fgnet_3_2_resnet50m_ls_neck_fc_parts,
-    'fgnet_3_3_resnet50m_ls_neck_fc_parts':fgnet_3_3_resnet50m_ls_neck_fc_parts,
-    'fgnet_1_1_resnet50_fc_parts_bd': fgnet_1_1_resnet50_fc_parts_bd,
-    'fgnet_1_2_resnet50_fc_parts_bd': fgnet_1_2_resnet50_fc_parts_bd,
-    'fgnet_1_1_resnet50_neck_fc_parts_bd': fgnet_1_1_resnet50_neck_fc_parts_bd,
-    'fgnet_1_2_resnet50_neck_fc_parts_bd': fgnet_1_2_resnet50_neck_fc_parts_bd,
-    'fgnet_1_1_resnet50_fc_parts_bd_tri': fgnet_1_1_resnet50_fc_parts_bd_tri, 
-    'fgnet_1_1_resnet50_neck_fc_parts_bd_tri': fgnet_1_1_resnet50_neck_fc_parts_bd_tri,
-    #MSRN
-    'msrn_bd_botdropfeat_doubot':msrn_bd_botdropfeat_doubot,
-    'msrn_bd_neck_botdropfeat_doubot':msrn_bd_neck_botdropfeat_doubot,
+    #bdnet
+    'bdnet': bdnet,
+    'bdnet_neck': bdnet_neck,
+    'bdnet_doublebot_botstream': bdnet_doublebot_botstream,
+    'bdnet_neck_doublebot_botstream': bdnet_neck_doublebot_botstream,
 }
 
 

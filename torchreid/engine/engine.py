@@ -556,8 +556,8 @@ class Engine(object):
                     if (batch_idx+1) % print_freq == 0:
                         print('- done batch {}/{} part {}/{}'.format(batch_idx+1, len(queryloader), part_ind + 1, len(outputs_list)))
 
-    def _compute_loss(self, criterion, outputs, targets, use_tuple=False):
-        if isinstance(outputs, (tuple, list)) and not use_tuple:
+    def _compute_loss(self, criterion, outputs, targets):
+        if isinstance(outputs, (tuple, list)):
             loss = DeepSupervision(criterion, outputs, targets)
         else:
             loss = criterion(outputs, targets)

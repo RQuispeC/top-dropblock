@@ -1,31 +1,32 @@
 model:
-  name: 'fgnet_1_1_resnet50_fc_parts_bd_tri'
-  load_weights: 'log/fgnet_1_1_resnet50_fc_parts_bd_tri_dukemtmcreid_triplet_softmax_dropbatch_topdrop_60/model.pth.tar-330'
+  name: 'bdnet' #bdnet_neck
+  load_weights: 'log/bdnet_market1501_triplet_xent_batchdrop/model.pth.tar-400'
 
 data:
   type: 'image'
-  sources: ['dukemtmcreid']
-  targets: ['dukemtmcreid']
+  sources: ['market1501']
+  targets: ['market1501']
   height: 384
   width: 128
   combineall: False
   transforms: ['random_flip', 'random_crop', 'random_erase']
-  save_dir: 'log/fgnet_1_1_resnet50_fc_parts_bd_tri_dukemtmcreid_triplet_softmax_dropbatch_topdrop_60'
+  save_dir: 'log/bdnet_market1501_triplet_xent_batchdrop'
+
+cuhk03:
+  labeled_images: True
 
 sampler:
   train_sampler: 'RandomIdentitySampler'
 
 test:
-  batch_size: 600
+  batch_size: 300
   dist_metric: 'euclidean'
   normalize_feature: False
   evaluate: True
-  eval_freq: 60
   rerank: False
   visactmap: False
   visrank: False
   visrankactiv: False
   visrank_topk: 5
   visrankactivthr: False
-  maskthr: 0.35
-
+  maskthr: 0.5

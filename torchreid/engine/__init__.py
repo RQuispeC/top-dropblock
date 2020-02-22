@@ -3,27 +3,5 @@ from __future__ import print_function
 
 from .engine import Engine
 
-from .image import ImageSoftmaxEngine
-from .image import ImageSoftmaxFGnetEngine
-from .image import ImageSoftmaxNpairsFGnetEngine
-from .image import ImageTripletNpairsFGnetEngine
-from .image import ImageTripletEngine
-from .image import ImageTripletNpairsDropBatchFGnetEngine
-from .image import ImageTripletDropBatchEngine
-from .image import ImageTripletNpairsSoftmaxFGnetEngine
-from .image import ImageTripletSoftmaxFGnetEngine
-from .image import ImageTripletSoftmaxDropbatchFGnetEngine
-from .image import ImageTripletNpairsSoftmaxSeparateFGnetEngine
-from .image import ImageTripletNpairsSoftmaxCsattentionFGnetEngine
-from .image import ImageTripletSoftmaxPartsDropbatchFGnetEngine
-from .image import ImageTripletDropBatchDropBotFeaturesEngine
-from .image import ImageReferenceDropBatchDropBotFeaturesEngine
-from .image import ImageGroupTripletDropBatchDropBotFeaturesEngine
-from .image import ImageFocalTripletDropBatchDropBotFeaturesEngine
-from .image import ImageDependencyTripletDropBatchDropBotFeaturesEngine
-from .image import ImageClusterTripletDropBatchDropBotFeaturesEngine
-from .image import ImageClusterDependencyTripletDropBatchDropBotFeaturesEngine
-from .image import ImagePoseTripletDropBatchDropBotFeaturesEngine
-
-from .video import VideoSoftmaxEngine
-from .video import VideoTripletEngine
+from .image import ImageTripletXentBatchDropEngine
+from .image import ImageTripletXentTopBatchDropEngine

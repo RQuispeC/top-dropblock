@@ -1,43 +1,39 @@
 model:
-  name: 'resnet50m_bd_ls_neck'
+  name: 'bdnet' #bdnet_neck
   pretrained: True
 
 data:
   type: 'image'
   sources: ['market1501']
   targets: ['market1501']
-  height: 256
+  height: 384
   width: 128
   combineall: False
   transforms: ['random_flip', 'random_crop', 'random_erase']
-  save_dir: 'log/resnet50m_bd_ls_neck_market1501_triplet_400epochs_warmup'
+  save_dir: 'log/bdnet_market1501_triplet_xent_batchdrop'
+
+cuhk03:
+  labeled_images: True
 
 sampler:
   train_sampler: 'RandomIdentitySampler'
 
 loss:
-  name: 'triplet_dropbatch'
-  softmax:
-    label_smooth: True
-  triplet:
-    weight_t: 1.0
-    weight_x: 1.0
-  dropbatch:
-    weight_db_t: 1.0
-    weight_db_x: 1.0
+  name: 'triplet_xent_batchdrop'
+  batchdrop:
+    top_drop_epoch: -1
 
 train:
   optim: 'adam'
   lr: 1.
   max_epoch: 400
   batch_size: 32
-  fixbase_epoch: 10
-  open_layers: ['classifier', 'bottleneck', 'fc_fuse', 'batch_drop']
-  lr_scheduler: 'warmup_db'
+  fixbase_epoch: 0
+  lr_scheduler: 'warmup_bd'
   stepsize: [50, 200, 300]
 
 test:
-  batch_size: 32
+  batch_size: 300
   dist_metric: 'euclidean'
   normalize_feature: False
   evaluate: False

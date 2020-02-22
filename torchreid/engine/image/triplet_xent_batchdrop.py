@@ -14,7 +14,7 @@ from torchreid.utils import AverageMeter, open_specified_layers, open_all_layers
 from torchreid import metrics
 
 
-class ImageTripletSoftmaxPartsDropbatchFGnetEngine(engine.Engine):
+class ImageTripletXentBatchDropEngine(engine.Engine):
     r"""Triplet-loss engine for image-reid.
 
     Args:
@@ -24,10 +24,13 @@ class ImageTripletSoftmaxPartsDropbatchFGnetEngine(engine.Engine):
         optimizer (Optimizer): an Optimizer.
         margin (float, optional): margin for triplet loss. Default is 0.3.
         weight_t (float, optional): weight for triplet loss. Default is 1.
-        weight_x (float, optional): weight for softmax loss. Default is 1.
+        weight_x (float, optional): weight for softmax loss. Default is 1
+        weight_bd_t (float, optional): weight for triplet loss.in batch drop stream Default is 1.
+        weight_bd_x (float, optional): weight for softmax loss.in batch drop stream Default is 1.
         scheduler (LRScheduler, optional): if None, no learning rate decay will be performed.
         use_gpu (bool, optional): use gpu. Default is True.
         label_smooth (bool, optional): use label smoothing regularizer. Default is True.
+        top_drop_epoch (int, optional): epooch when to start using top drop batch Default -1 
 
     Examples::
         
@@ -44,9 +47,9 @@ class ImageTripletSoftmaxPartsDropbatchFGnetEngine(engine.Engine):
             train_sampler='RandomIdentitySampler' # this is important
         )
         model = torchreid.models.build_model(
-            name='resnet50',
+            name='bdnet',
             num_classes=datamanager.num_train_pids,
-            loss='triplet'
+            loss='triplet_xent_batchdrop'
         )
         model = model.cuda()
         optimizer = torchreid.optim.build_optimizer(
@@ -57,7 +60,7 @@ class ImageTripletSoftmaxPartsDropbatchFGnetEngine(engine.Engine):
             lr_scheduler='single_step',
             stepsize=20
         )
-        engine = torchreid.engine.ImageTripletEngine(
+        engine = torchreid.engine.ImageTripletXentBatchDropEngine(
             datamanager, model, optimizer, margin=0.3,
             weight_t=0.7, weight_x=1, scheduler=scheduler
         )
@@ -69,34 +72,24 @@ class ImageTripletSoftmaxPartsDropbatchFGnetEngine(engine.Engine):
     """   
 
     def __init__(self, datamanager, model, optimizer, margin=0.3,
-                 weight_t=1, weight_x=1, weight_x_parts=1, weight_t_parts=1, weight_db_t=1, weight_db_x=1, scheduler=None, use_gpu=True,
+                 weight_t=1, weight_x=1, weight_bd_t=1, weight_bd_x=1, scheduler=None, use_gpu=True,
                  label_smooth=True, top_drop_epoch=-1):
-        super(ImageTripletSoftmaxPartsDropbatchFGnetEngine, self).__init__(datamanager, model, optimizer, scheduler, use_gpu)
+        super(ImageTripletXentBatchDropEngine, self).__init__(datamanager, model, optimizer, scheduler, use_gpu)
 
         self.weight_t = weight_t
         self.weight_x = weight_x
-        self.weight_x_parts = weight_x_parts
-        self.weight_t_parts = weight_t_parts
-        self.weight_db_t = weight_db_t
-        self.weight_db_x = weight_db_x
+        self.weight_bd_t = weight_bd_t
+        self.weight_bd_x = weight_bd_x
         self.top_drop_epoch = top_drop_epoch
-        
+
         self.criterion_t = TripletLoss(margin=margin)
         self.criterion_x = CrossEntropyLoss(
             num_classes=self.datamanager.num_train_pids,
             use_gpu=self.use_gpu,
             label_smooth=label_smooth
         )
-
-        self.criterion_t_parts = TripletLoss(margin=margin)
-        self.criterion_x_parts = CrossEntropyLoss(
-            num_classes=self.datamanager.num_train_pids,
-            use_gpu=self.use_gpu,
-            label_smooth=label_smooth
-        )
-
-        self.criterion_db_t = TripletLoss(margin=margin)
-        self.criterion_db_x = CrossEntropyLoss(
+        self.criterion_bd_t = TripletLoss(margin=margin)
+        self.criterion_bd_x = CrossEntropyLoss(
             num_classes=self.datamanager.num_train_pids,
             use_gpu=self.use_gpu,
             label_smooth=label_smooth
@@ -105,10 +98,8 @@ class ImageTripletSoftmaxPartsDropbatchFGnetEngine(engine.Engine):
     def train(self, epoch, max_epoch, trainloader, fixbase_epoch=0, open_layers=None, print_freq=10):
         losses_t = AverageMeter()
         losses_x = AverageMeter()
-        losses_x_parts = AverageMeter()
-        losses_t_parts = AverageMeter()
-        losses_db_t = AverageMeter()
-        losses_db_x = AverageMeter()
+        losses_bd_t = AverageMeter()
+        losses_bd_x = AverageMeter()
         accs = AverageMeter()
         batch_time = AverageMeter()
         data_time = AverageMeter()
@@ -132,14 +123,12 @@ class ImageTripletSoftmaxPartsDropbatchFGnetEngine(engine.Engine):
 
             self.optimizer.zero_grad()
             drop_top = (self.top_drop_epoch != -1) and ((epoch+1) >= self.top_drop_epoch)
-            global_outputs, parts_output, global_features, parts_features, part_weights, (db_prelogits, db_features) = self.model(imgs, drop_top = drop_top)
-            loss_x = self._compute_loss(self.criterion_x, global_outputs, pids)
-            loss_t = self._compute_loss(self.criterion_t, global_features, pids)
-            loss_x_parts = self._compute_loss(self.criterion_x_parts, parts_output, pids)
-            loss_t_parts = self._compute_loss(self.criterion_t_parts, parts_features, pids)
-            loss_db_x = self._compute_loss(self.criterion_db_x, db_prelogits, pids)
-            loss_db_t = self._compute_loss(self.criterion_db_t, db_features, pids)
-            loss = self.weight_t * loss_t + self.weight_x * loss_x + self.weight_x_parts * loss_x_parts + self.weight_t_parts * loss_t_parts + self.weight_db_t * loss_db_t + self.weight_db_x * loss_db_x
+            prelogits, features, db_prelogits, db_features = self.model(imgs, drop_top = drop_top)
+            loss_x = self._compute_loss(self.criterion_x, prelogits, pids)
+            loss_t = self._compute_loss(self.criterion_t, features, pids)
+            loss_bd_x = self._compute_loss(self.criterion_bd_x, db_prelogits, pids)
+            loss_bd_t = self._compute_loss(self.criterion_bd_t, db_features, pids)
+            loss = self.weight_t * loss_t + self.weight_x * loss_x + self.weight_bd_t * loss_bd_t + self.weight_bd_x * loss_bd_x
             loss.backward()
             self.optimizer.step()
 
@@ -147,11 +136,9 @@ class ImageTripletSoftmaxPartsDropbatchFGnetEngine(engine.Engine):
 
             losses_t.update(loss_t.item(), pids.size(0))
             losses_x.update(loss_x.item(), pids.size(0))
-            losses_x_parts.update(loss_x_parts.item(), pids.size(0))
-            losses_t_parts.update(loss_t_parts.item(), pids.size(0))
-            losses_db_t.update(loss_db_t.item(), pids.size(0))
-            losses_db_x.update(loss_db_x.item(), pids.size(0))
-            accs.update(metrics.accuracy(global_outputs, pids)[0].item())
+            losses_bd_t.update(loss_bd_t.item(), pids.size(0))
+            losses_bd_x.update(loss_bd_x.item(), pids.size(0))
+            accs.update(metrics.accuracy(prelogits, pids)[0].item())
 
             if (batch_idx+1) % print_freq == 0:
                 # estimate remaining time
@@ -162,22 +149,18 @@ class ImageTripletSoftmaxPartsDropbatchFGnetEngine(engine.Engine):
                       'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
                       'Loss_t {loss_t.val:.4f} ({loss_t.avg:.4f})\t'
                       'Loss_x {loss_x.val:.4f} ({loss_x.avg:.4f})\t'
-                      'Loss_db_t {loss_db_t.val:.4f} ({loss_db_t.avg:.4f})\t'
-                      'Loss_db_x {loss_db_x.val:.4f} ({loss_db_x.avg:.4f})\t'
-                      'Loss_x_parts {loss_x_parts.val:.4f} ({loss_x_parts.avg:.4f})\t'
-                      'Loss_t_parts {loss_t_parts.val:.4f} ({loss_t_parts.avg:.4f})\t'
+                      'loss_bd_t {loss_bd_t.val:.4f} ({loss_bd_t.avg:.4f})\t'
+                      'loss_bd_x {loss_bd_x.val:.4f} ({loss_bd_x.avg:.4f})\t'
                       'Acc glob{acc.val:.2f} ({acc.avg:.2f})\t'
-                      'Lr {lr:.6f}\t'
+                      'Lr {lr:.8f}\t'
                       'eta {eta}'.format(
                       epoch+1, max_epoch, batch_idx+1, num_batches,
                       batch_time=batch_time,
                       data_time=data_time,
                       loss_t=losses_t,
                       loss_x=losses_x,
-                      loss_db_t=losses_db_t,
-                      loss_db_x=losses_db_x,
-                      loss_x_parts=losses_x_parts,
-                      loss_t_parts=losses_t_parts,
+                      loss_bd_t=losses_bd_t,
+                      loss_bd_x=losses_bd_x,
                       acc=accs,
                       lr=self.optimizer.param_groups[0]['lr'],
                       eta=eta_str
@@ -190,18 +173,11 @@ class ImageTripletSoftmaxPartsDropbatchFGnetEngine(engine.Engine):
                 self.writer.add_scalar('Train/Data', data_time.avg, n_iter)
                 self.writer.add_scalar('Train/Loss_t', losses_t.avg, n_iter)
                 self.writer.add_scalar('Train/Loss_x', losses_x.avg, n_iter)
-                self.writer.add_scalar('Train/Loss_db_t', losses_db_t.avg, n_iter)
-                self.writer.add_scalar('Train/Loss_db_x', losses_db_x.avg, n_iter)
-                self.writer.add_scalar('Train/Loss_x_parts', losses_x_parts.avg, n_iter)
-                self.writer.add_scalar('Train/Loss_t_parts', losses_t_parts.avg, n_iter)
+                self.writer.add_scalar('Train/loss_bd_t', losses_bd_t.avg, n_iter)
+                self.writer.add_scalar('Train/loss_bd_x', losses_bd_x.avg, n_iter)
                 self.writer.add_scalar('Train/Acc glob', accs.avg, n_iter)
                 self.writer.add_scalar('Train/Lr', self.optimizer.param_groups[0]['lr'], n_iter)
-
-                #log part weights
-                for i, (_, weights) in enumerate(part_weights):#parts
-                    for j in range(min(weights.size(0), 3)):#batch
-                        self.writer.add_histogram('Train/Part{}/Batch{}'.format(i, j), weights[j, ...], n_iter)
-
+            
             end = time.time()
 
         if self.scheduler is not None:
