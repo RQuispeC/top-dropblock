@@ -21,14 +21,21 @@ from .hacnn import *
 from .pcb import *
 from .mlfn import *
 from .osnet import *
-
 from .bdnet import *
+
 
 __model_factory = {
     # image classification models
     'resnet18': resnet18,
     'resnet34': resnet34,
     'resnet50': resnet50,
+    #'resnet50_bd': resnet50_bd,
+    #'resnet50_bd_neck': resnet50_bd_neck,
+    #'resnet50_bd_botdropfeat': resnet50_bd_botdropfeat, 
+    #'resnet50_bd_neck_botdropfeat': resnet50_bd_neck_botdropfeat, 
+    'top_bdnet_botdropfeat_doubot': top_bdnet_botdropfeat_doubot, 
+    'top_bdnet_neck_botdropfeat_doubot': top_bdnet_neck_botdropfeat_doubot,
+    'resnet50_ls': resnet50_ls,
     'resnet101': resnet101,
     'resnet152': resnet152,
     'resnext50_32x4d': resnext50_32x4d,
@@ -70,12 +77,7 @@ __model_factory = {
     'osnet_x0_75': osnet_x0_75,
     'osnet_x0_5': osnet_x0_5,
     'osnet_x0_25': osnet_x0_25,
-    'osnet_ibn_x1_0': osnet_ibn_x1_0,
-    #bdnet
-    'bdnet': bdnet,
-    'bdnet_neck': bdnet_neck,
-    'bdnet_doublebot_botstream': bdnet_doublebot_botstream,
-    'bdnet_neck_doublebot_botstream': bdnet_neck_doublebot_botstream,
+    'osnet_ibn_x1_0': osnet_ibn_x1_0
 }
 
 
@@ -89,7 +91,7 @@ def show_avai_models():
     print(list(__model_factory.keys()))
 
 
-def build_model(name, num_classes, loss='softmax', pretrained=True, use_gpu=True, batch_num_classes = -1):
+def build_model(name, num_classes, loss='softmax', pretrained=True, use_gpu=True):
     """A function wrapper for building a model.
 
     Args:
@@ -115,6 +117,5 @@ def build_model(name, num_classes, loss='softmax', pretrained=True, use_gpu=True
         num_classes=num_classes,
         loss=loss,
         pretrained=pretrained,
-        use_gpu=use_gpu,
-        batch_num_classes=batch_num_classes
+        use_gpu=use_gpu
     )

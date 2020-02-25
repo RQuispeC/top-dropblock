@@ -4,9 +4,9 @@ from __future__ import print_function
 import torch
 
 
-AVAI_SCH = ['single_step', 'multi_step', 'cosine', 'warmup_bd', 'warmup_sb']
+AVAI_SCH = ['single_step', 'multi_step', 'cosine', 'warmup_db', 'warmup_sb']
 
-def warmup_bd(ep, stepsize):
+def warmup_db(ep, stepsize):
     ep +=1
     if ep < stepsize[0]:
         lr = 1e-4*(ep//5+1)
@@ -16,9 +16,21 @@ def warmup_bd(ep, stepsize):
         lr = 1e-4
     else:
         lr = 1e-5
-    lr /= 4.
+    lr /= 4
     return lr
 
+def warmup_sb(ep, stepsize):
+    ep +=1
+    if ep < stepsize[0]:
+        lr = 3.5e-5*(ep//10+1)
+    elif ep < stepsize[1]:
+        lr = 3.5e-4
+    elif ep < stepsize[2]:
+        lr = 3.5e-5
+    else:
+        lr = 3.5e-6
+    lr /= 4
+    return lr
 
 def build_lr_scheduler(optimizer, lr_scheduler='single_step', stepsize=1, gamma=0.1, max_epoch=1):
     """A function wrapper for building a learning rate scheduler.
@@ -70,10 +82,10 @@ def build_lr_scheduler(optimizer, lr_scheduler='single_step', stepsize=1, gamma=
             optimizer, milestones=stepsize, gamma=gamma
         )
 
-    elif lr_scheduler == 'warmup_bd':
+    elif lr_scheduler == 'warmup_db':
         if not isinstance(stepsize, list):
             raise TypeError(
-                'For warmup_bd lr_scheduler, stepsize must'
+                'For warmup_db lr_scheduler, stepsize must'
                 'be a list, but got {}'.format(type(stepsize))
             )
         if not len(stepsize)==3:
@@ -81,7 +93,23 @@ def build_lr_scheduler(optimizer, lr_scheduler='single_step', stepsize=1, gamma=
                 'For warmup lr_scheduler, must have only 3 elements'
                 'be a list, but got {}'.format(stepsize)
             )
-        warmup_lambda = lambda epoch: warmup_bd(epoch, stepsize)
+        warmup_lambda = lambda epoch: warmup_db(epoch, stepsize)
+        scheduler = torch.optim.lr_scheduler.LambdaLR(
+            optimizer, lr_lambda=[warmup_lambda]
+        )
+
+    elif lr_scheduler == 'warmup_sb':
+        if not isinstance(stepsize, list):
+            raise TypeError(
+                'For warmup_sb lr_scheduler, stepsize must'
+                'be a list, but got {}'.format(type(stepsize))
+            )
+        if not len(stepsize)==3:
+            raise TypeError(
+                'For warmup lr_scheduler, must have only 3 elements'
+                'be a list, but got {}'.format(stepsize)
+            )
+        warmup_lambda = lambda epoch: warmup_sb(epoch, stepsize)
         scheduler = torch.optim.lr_scheduler.LambdaLR(
             optimizer, lr_lambda=[warmup_lambda]
         )

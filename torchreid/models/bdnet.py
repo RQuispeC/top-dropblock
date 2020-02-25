@@ -1,19 +1,19 @@
 from __future__ import absolute_import
 from __future__ import division
 
-__all__ = ['bdnet', 'bdnet_neck', 'bdnet_doublebot_botstream', 'bdnet_neck_doublebot_botstream']
+#__all__ = ['TopBDNet_neck','TopBDNet', 'TopBDNet_botdropfeat', 'TopBDNet_neck_botdropfeat', 'TopBDNet_botdropfeat_doubot', 'TopBDNet_neck_botdropfeat_doubot']
+__all__ = ['top_bdnet_botdropfeat_doubot', 'top_bdnet_neck_botdropfeat_doubot']
 
 import torch
 from torch import nn
 from torch.nn import functional as F
-from .resnet import resnet50_ls
+from .resnet import resnet50_ls, resnet50
 from torchvision.models.resnet import Bottleneck
 import random
 
 
-"""
-# batchdrop blocks
-"""
+#batch dropblock
+
 class BatchDrop(nn.Module):
     def __init__(self, h_ratio, w_ratio):
         super(BatchDrop, self).__init__()
@@ -32,9 +32,9 @@ class BatchDrop(nn.Module):
             x = x * mask
         return x
 
-class TopBatchDrop(nn.Module):
+class BatchDropTop(nn.Module):
     def __init__(self, h_ratio):
-        super(TopBatchDrop, self).__init__()
+        super(BatchDropTop, self).__init__()
         self.h_ratio = h_ratio
     
     def forward(self, x):
@@ -72,18 +72,18 @@ class BatchFeatureErase_Basic(nn.Module):
         return x
 
 class BatchFeatureErase_Top(nn.Module):
-    def __init__(self, channels, h_ratio=0.33, w_ratio=1., double_bottleneck = False, planes=512):
+    def __init__(self, channels, h_ratio=0.33, w_ratio=1., double_bottleneck = False):
         super(BatchFeatureErase_Top, self).__init__()
         if double_bottleneck:
             self.drop_batch_bottleneck = nn.Sequential(
-                Bottleneck(channels, planes),
-                Bottleneck(channels, planes)
+                Bottleneck(channels, 512),
+                Bottleneck(channels, 512)
             )
         else:
-            self.drop_batch_bottleneck = Bottleneck(channels, planes)
+            self.drop_batch_bottleneck = Bottleneck(channels, 512)
 
         self.drop_batch_drop_basic = BatchDrop(h_ratio, w_ratio)
-        self.drop_batch_drop_top = TopBatchDrop(h_ratio)
+        self.drop_batch_drop_top = BatchDropTop(h_ratio)
 
     def forward(self, x, drop_top=False, bottleneck_features = False):
         features = self.drop_batch_bottleneck(x)
@@ -97,34 +97,31 @@ class BatchFeatureErase_Top(nn.Module):
         else:
             return x
 
-"""
-# batch dropblock net
-"""
-class ResNet50_BD(nn.Module):
+class TopBDNet(nn.Module):
     """
     """
-    def __init__(self, num_classes=0, loss='softmax', neck = False, drop_height_ratio=0.33, drop_width_ratio=1.0, double_bottleneck=False, db_bottleneck_stream=False, **kwargs):
-        super(ResNet50_BD, self).__init__()
+    def __init__(self, num_classes=0, loss='softmax', neck = False, drop_height_ratio=0.33, drop_width_ratio=1.0, double_bottleneck=False, drop_bottleneck_features=False, **kwargs):
+        super(TopBDNet, self).__init__()
         self.loss = loss
-        self.db_bottleneck_stream = db_bottleneck_stream
+        self.drop_bottleneck_features = drop_bottleneck_features
         if neck:
-            self.neck_global = nn.BatchNorm1d(512)
-            self.neck_global.bias.requires_grad_(False)  # no shift
-            self.neck_bd = nn.BatchNorm1d(1024)
-            self.neck_bd.bias.requires_grad_(False)  # no shift
-            self.neck_bd_bottleneck = nn.BatchNorm1d(2048)
-            self.neck_bd_bottleneck.bias.requires_grad_(False)  # no shift
+            self.bottleneck_global = nn.BatchNorm1d(512)
+            self.bottleneck_global.bias.requires_grad_(False)  # no shift
+            self.bottleneck_db = nn.BatchNorm1d(1024)
+            self.bottleneck_db.bias.requires_grad_(False)  # no shift
+            self.bottleneck_drop_bottleneck_features = nn.BatchNorm1d(2048)
+            self.bottleneck_drop_bottleneck_features.bias.requires_grad_(False)  # no shift
         else:
-            self.neck_global = None
-            self.neck_bd = None
-            self.neck_bd_bottleneck = None
+            self.bottleneck_global = None
+            self.bottleneck_db = None
+            self.bottleneck_drop_bottleneck_features = None
 
         self.reduction_global = nn.Sequential(
             nn.Conv2d(2048, 512, 1),
             nn.BatchNorm2d(512),
             nn.ReLU()
         )
-        self.reduction_bd = nn.Sequential(
+        self.reduction_db = nn.Sequential(
             nn.Linear(2048, 1024, 1),
             nn.BatchNorm1d(1024),
             nn.ReLU()
@@ -133,14 +130,15 @@ class ResNet50_BD(nn.Module):
         self.maxpool = nn.AdaptiveMaxPool2d((1,1))
         self.avgpool = nn.AdaptiveAvgPool2d((1,1))
         self.classifier_global = nn.Linear(512, num_classes)
-        self.classifier_bd = nn.Linear(1024, num_classes)
+        self.classifier_db = nn.Linear(1024, num_classes)
         self.batch_drop = BatchFeatureErase_Top(2048, drop_height_ratio, drop_width_ratio, double_bottleneck)
-        if self.db_bottleneck_stream:
-            self.classifier_bd_bottleneck = nn.Linear(2048, num_classes)
+        if self.drop_bottleneck_features:
+            self.classifier_drop_bottleneck = nn.Linear(2048, num_classes)
         else:
-            self.classifier_bd_bottleneck = None
+            self.classifier_drop_bottleneck = None
         self._init_params()
-        resnet = resnet50_ls(num_classes, pretrained=True) #resnet50 with last stride = 1
+
+        resnet = resnet50_ls(num_classes, pretrained=True)
         self.base = nn.Sequential(*list(resnet.children())[:-2])
 
     def _init_params(self):
@@ -165,103 +163,94 @@ class ResNet50_BD(nn.Module):
         if return_featuremaps:
             return x
 
-        #b_bd
-        if self.db_bottleneck_stream:
-            x_drop, x_bd_bottleneck_t = self.batch_drop(x, drop_top=drop_top, bottleneck_features = True)
-            x_bd_bottleneck_t = self.avgpool(x_bd_bottleneck_t).view(x_bd_bottleneck_t.size()[:2])
-            if self.neck_bd_bottleneck:
-                x_bd_bottleneck_x = self.neck_bd_bottleneck(x_bd_bottleneck_t)
+        if self.drop_bottleneck_features:
+            drop_x, t_drop_bottleneck_features = self.batch_drop(x, drop_top=drop_top, bottleneck_features = True)
+            t_drop_bottleneck_features = self.avgpool(t_drop_bottleneck_features).view(t_drop_bottleneck_features.size()[:2])
+            if self.bottleneck_drop_bottleneck_features:
+                x_drop_bottleneck_features = self.bottleneck_drop_bottleneck_features(t_drop_bottleneck_features)
             else:
-                x_bd_bottleneck_x = x_bd_bottleneck_t
-            x_bd_bottleneck_prelogits = self.classifier_bd_bottleneck(x_bd_bottleneck_x)
+                x_drop_bottleneck_features = t_drop_bottleneck_features
+            x_drop_bottleneck_features = self.classifier_drop_bottleneck(x_drop_bottleneck_features)
         else:
-            x_drop = self.batch_drop(x, drop_top=drop_top)
-            x_bd_bottleneck_prelogits, x_bd_bottleneck_t = None, None
+            drop_x = self.batch_drop(x, drop_top=drop_top)
 
         #global
         x = self.avgpool(x)
-        x_t = self.reduction_global(x)
-        x_t = x_t.view(x_t.size()[:2])
-        if self.neck_global:
-            x_x = self.neck_global(x_t)
+        t_x = self.reduction_global(x)
+        t_x = t_x.view(t_x.size()[:2])
+        if self.bottleneck_global:
+            x_x = self.bottleneck_global(t_x)
         else:
-            x_x = x_t
+            x_x = t_x
         x_prelogits = self.classifier_global(x_x)
 
         #db
-        x_drop = self.maxpool(x_drop).view(x_drop.size()[:2])
-        x_drop_t = self.reduction_bd(x_drop)
-        if self.neck_bd:
-            x_drop_x = self.neck_bd(x_drop_t)
+        drop_x = self.maxpool(drop_x).view(drop_x.size()[:2])
+        t_drop_x = self.reduction_db(drop_x)
+        if self.bottleneck_db:
+            x_drop_x = self.bottleneck_db(t_drop_x)
         else:
-            x_drop_x = x_drop_t
-        x_drop_prelogits = self.classifier_bd(x_drop_x)
+            x_drop_x = t_drop_x
+        x_drop_prelogits = self.classifier_db(x_drop_x)
 
         if not self.training:
-            if torch.is_tensor(x_bd_bottleneck_prelogits):
-                return torch.cat((x_x, x_drop_x, x_bd_bottleneck_x), dim=1)
-            else:
-                return torch.cat((x_x, x_drop_x), dim=1)
+            return torch.cat((x_x, x_drop_x), dim=1)
 
-        if self.loss == 'triplet_xent_batchdrop':
-            return x_prelogits, x_t, x_drop_prelogits, x_drop_t
-        elif self.loss == 'triplet_xent_top_batchdrop':
-            return x_prelogits, x_t, x_drop_prelogits, x_drop_t, x_bd_bottleneck_prelogits, x_bd_bottleneck_t
+        if self.loss == 'triplet_dropbatch':
+            return x_prelogits, t_x, x_drop_prelogits, t_drop_x
+        if self.loss == 'triplet_dropbatch_dropbotfeatures':
+            return x_prelogits, t_x, x_drop_prelogits, t_drop_x, x_drop_bottleneck_features, t_drop_bottleneck_features
         else:
             raise KeyError("Unsupported loss: {}".format(self.loss))
 
-def bdnet(num_classes, loss='softmax', pretrained=True, **kwargs):
-    """
-    Replicates work of Dai et. al. Batch DropBlock Network for Person Re-identification and Beyond
-    """
-    model = ResNet50_BD(
+def top_bdnet_botdropfeat(num_classes, loss='softmax', pretrained=True, **kwargs):
+    model = TopBDNet(
         num_classes=num_classes,
         loss=loss,
-        neck = False,
+        neck=False,
         drop_height_ratio=0.33,
         drop_width_ratio=1.0,
+        drop_bottleneck_features=True,
+        double_bottleneck=False
+        **kwargs
+    )
+    return model
+
+def top_bdnet_neck_botdropfeat(num_classes, loss='softmax', pretrained=True, **kwargs):
+    model = TopBDNet(
+        num_classes=num_classes,
+        loss=loss,
+        neck=True,
+        drop_height_ratio=0.33,
+        drop_width_ratio=1.0,
+        drop_bottleneck_features=True,
         double_bottleneck=False,
-        db_bottleneck_stream=False,
         **kwargs
     )
     return model
 
-def bdnet_neck(num_classes, loss='softmax', pretrained=True, **kwargs):
-    model = ResNet50_BD(
+def top_bdnet_botdropfeat_doubot(num_classes, loss='softmax', pretrained=True, **kwargs):
+    model = TopBDNet(
         num_classes=num_classes,
         loss=loss,
-        neck = True,
+        neck=False,
         drop_height_ratio=0.33,
         drop_width_ratio=1.0,
-        double_bottleneck=False,
-        db_bottleneck_stream=False,
-        **kwargs
-    )
-    return model
-
-def bdnet_doublebot_botstream(num_classes, loss='softmax', pretrained=True, **kwargs):
-    model = ResNet50_BD(
-        num_classes=num_classes,
-        loss=loss,
-        neck = False,
-        drop_height_ratio=0.33,
-        drop_width_ratio=1.0,
+        drop_bottleneck_features=True,
         double_bottleneck=True,
-        db_bottleneck_stream=True,
         **kwargs
     )
     return model
 
-def bdnet_neck_doublebot_botstream(num_classes, loss='softmax', pretrained=True, **kwargs):
-    model = ResNet50_BD(
+def top_bdnet_neck_botdropfeat_doubot(num_classes, loss='softmax', pretrained=True, **kwargs):
+    model = TopBDNet(
         num_classes=num_classes,
         loss=loss,
-        neck = True,
+        neck=True,
         drop_height_ratio=0.33,
         drop_width_ratio=1.0,
+        drop_bottleneck_features=True,
         double_bottleneck=True,
-        db_bottleneck_stream=True,
         **kwargs
     )
     return model
-

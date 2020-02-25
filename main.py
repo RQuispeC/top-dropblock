@@ -28,43 +28,87 @@ def build_datamanager(cfg):
 
 def build_engine(cfg, datamanager, model, optimizer, scheduler):
     if cfg.data.type == 'image':
-        if cfg.loss.name == 'triplet_xent_batchdrop':
-            engine = torchreid.engine.ImageTripletXentBatchDropEngine(
+        if cfg.loss.name == 'softmax':
+            engine = torchreid.engine.ImageSoftmaxEngine(
                 datamanager,
                 model,
                 optimizer,
-                margin=cfg.loss.batchdrop.triplet.margin,
-                weight_t=cfg.loss.batchdrop.weight_t,
-                weight_x=cfg.loss.batchdrop.weight_x,
-                weight_bd_t=cfg.loss.batchdrop.weight_bd_t,
-                weight_bd_x=cfg.loss.batchdrop.weight_bd_x,
-                top_drop_epoch=cfg.loss.batchdrop.top_drop_epoch,
                 scheduler=scheduler,
                 use_gpu=cfg.use_gpu,
-                label_smooth=cfg.loss.batchdrop.softmax.label_smooth
+                label_smooth=cfg.loss.softmax.label_smooth
             )
-        elif cfg.loss.name == 'triplet_xent_top_batchdrop':
-            engine = torchreid.engine.ImageTripletXentTopBatchDropEngine(
+        elif cfg.loss.name == 'triplet_dropbatch':
+            engine = torchreid.engine.ImageTripletDropBatchEngine(
                 datamanager,
                 model,
                 optimizer,
-                margin=cfg.loss.batchdrop.triplet.margin,
-                weight_t=cfg.loss.batchdrop.weight_t,
-                weight_x=cfg.loss.batchdrop.weight_x,
-                weight_bd_t=cfg.loss.batchdrop.weight_bd_t,
-                weight_bd_x=cfg.loss.batchdrop.weight_bd_x,
-                weight_b_bd_t=cfg.loss.batchdrop.weight_b_bd_t,
-                weight_b_bd_x=cfg.loss.batchdrop.weight_b_bd_x,
-                top_drop_epoch=cfg.loss.batchdrop.top_drop_epoch,
+                margin=cfg.loss.triplet.margin,
+                weight_t=cfg.loss.triplet.weight_t,
+                weight_x=cfg.loss.triplet.weight_x,
+                weight_db_t=cfg.loss.dropbatch.weight_db_t,
+                weight_db_x=cfg.loss.dropbatch.weight_db_x,
+                top_drop_epoch=cfg.loss.dropbatch.top_drop_epoch,
                 scheduler=scheduler,
                 use_gpu=cfg.use_gpu,
-                label_smooth=cfg.loss.batchdrop.softmax.label_smooth
+                label_smooth=cfg.loss.softmax.label_smooth
+            )
+        elif cfg.loss.name == 'triplet_dropbatch_dropbotfeatures':
+            engine = torchreid.engine.ImageTripletDropBatchDropBotFeaturesEngine(
+                datamanager,
+                model,
+                optimizer,
+                margin=cfg.loss.triplet.margin,
+                weight_t=cfg.loss.triplet.weight_t,
+                weight_x=cfg.loss.triplet.weight_x,
+                weight_db_t=cfg.loss.dropbatch.weight_db_t,
+                weight_db_x=cfg.loss.dropbatch.weight_db_x,
+                weight_b_db_t=cfg.loss.dropbatch.weight_b_db_t,
+                weight_b_db_x=cfg.loss.dropbatch.weight_b_db_x,
+                top_drop_epoch=cfg.loss.dropbatch.top_drop_epoch,
+                scheduler=scheduler,
+                use_gpu=cfg.use_gpu,
+                label_smooth=cfg.loss.softmax.label_smooth
+            )
+        elif cfg.loss.name == 'triplet':
+            engine = torchreid.engine.ImageTripletEngine(
+                datamanager,
+                model,
+                optimizer,
+                margin=cfg.loss.triplet.margin,
+                weight_t=cfg.loss.triplet.weight_t,
+                weight_x=cfg.loss.triplet.weight_x,
+                scheduler=scheduler,
+                use_gpu=cfg.use_gpu,
+                label_smooth=cfg.loss.softmax.label_smooth
             )
         else:
             exit("ERROR")
     else:
-        exit("ERROR")
+        if cfg.loss.name == 'softmax':
+            engine = torchreid.engine.VideoSoftmaxEngine(
+                datamanager,
+                model,
+                optimizer,
+                scheduler=scheduler,
+                use_gpu=cfg.use_gpu,
+                label_smooth=cfg.loss.softmax.label_smooth,
+                pooling_method=cfg.video.pooling_method
+            )
+        else:
+            engine = torchreid.engine.VideoTripletEngine(
+                datamanager,
+                model,
+                optimizer,
+                margin=cfg.loss.triplet.margin,
+                weight_t=cfg.loss.triplet.weight_t,
+                weight_x=cfg.loss.triplet.weight_x,
+                scheduler=scheduler,
+                use_gpu=cfg.use_gpu,
+                label_smooth=cfg.loss.softmax.label_smooth
+            )
+
     return engine
+
 
 def reset_config(cfg, args):
     if args.root:
@@ -112,14 +156,14 @@ def main():
         torch.backends.cudnn.benchmark = True
     
     datamanager = build_datamanager(cfg)
+    
     print('Building model: {}'.format(cfg.model.name))
     model = torchreid.models.build_model(
         name=cfg.model.name,
         num_classes=datamanager.num_train_pids,
         loss=cfg.loss.name,
         pretrained=cfg.model.pretrained,
-        use_gpu=cfg.use_gpu,
-        batch_num_classes=cfg.train.batch_size // cfg.sampler.num_instances
+        use_gpu=cfg.use_gpu
     )
     num_params, flops = compute_model_complexity(model, (1, 3, cfg.data.height, cfg.data.width))
     print('Model complexity: params={:,} flops={:,}'.format(num_params, flops))

@@ -1,0 +1,52 @@
+model:
+  name: 'top_bdnet_neck_botdropfeat_doubot'
+  pretrained: True
+
+data:
+  type: 'image'
+  sources: ['cuhk03']
+  targets: ['cuhk03']
+  height: 384
+  width: 128
+  combineall: False
+  transforms: ['random_flip', 'random_crop', 'random_erase']
+  save_dir: 'log/top_bdnet_neck_botdropfeat_doubot_cuhk03_detected_triplet_dropbatch_dropbotfeatures_topdrop_0'
+
+cuhk03:
+  labeled_images: False
+
+sampler:
+  train_sampler: 'RandomIdentitySampler'
+
+loss:
+  name: 'triplet_dropbatch_dropbotfeatures'
+  softmax:
+    label_smooth: True
+  triplet:
+    weight_t: 1.0
+    weight_x: 1.0
+  dropbatch:
+    weight_db_t: 1.0
+    weight_db_x: 1.0
+    weight_b_db_t: 1.0
+    weight_b_db_x: 1.0
+    top_drop_epoch: 0
+
+train:
+  optim: 'adam'
+  lr: 1.
+  max_epoch: 400
+  batch_size: 32
+  fixbase_epoch: 0
+  open_layers: ['bottleneck_global', 'bottleneck_db', 'reduction_global', 'reduction_db','classifier_global', 'classifier_db', 'batch_drop', 'bottleneck_drop_bottleneck_features', 'classifier_drop_bottleneck']
+  lr_scheduler: 'warmup_db'
+  stepsize: [50, 200, 300]
+
+test:
+  batch_size: 300
+  dist_metric: 'euclidean'
+  normalize_feature: False
+  evaluate: False
+  eval_freq: 30
+  rerank: False
+  visactmap: False

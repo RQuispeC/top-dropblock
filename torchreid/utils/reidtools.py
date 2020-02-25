@@ -315,13 +315,6 @@ def visualize_ranked_threshold_activation_results(distmat, query_act, gallery_ac
                     grid_img[:height, start: end, :] = gimg
                     grid_img[height+10: 2*height+10, start: end, :] = overlapped
                     grid_img[2*height+20:, start: end, :] = mask
-                    #add distance value distmat[q_idx, g_idx]
-                    cv2.putText(grid_img, str(round(distmat[q_idx, g_idx], 5)), 
-                        (start, height+10), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 
-                        0.7,
-                        (0, 0, 0),
-                        2)
                 else:
                     pass
 

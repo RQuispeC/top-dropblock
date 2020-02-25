@@ -9,12 +9,12 @@ import torch
 
 import torchreid
 from torchreid.engine import engine
-from torchreid.losses import CrossEntropyLoss, TripletLoss
+from torchreid.losses import CrossEntropyLoss, TripletLoss, NPairsLoss
 from torchreid.utils import AverageMeter, open_specified_layers, open_all_layers
 from torchreid import metrics
 
 
-class ImageTripletXentBatchDropEngine(engine.Engine):
+class ImageTripletDropBatchDropBotFeaturesEngine(engine.Engine):
     r"""Triplet-loss engine for image-reid.
 
     Args:
@@ -24,13 +24,10 @@ class ImageTripletXentBatchDropEngine(engine.Engine):
         optimizer (Optimizer): an Optimizer.
         margin (float, optional): margin for triplet loss. Default is 0.3.
         weight_t (float, optional): weight for triplet loss. Default is 1.
-        weight_x (float, optional): weight for softmax loss. Default is 1
-        weight_bd_t (float, optional): weight for triplet loss.in batch drop stream Default is 1.
-        weight_bd_x (float, optional): weight for softmax loss.in batch drop stream Default is 1.
+        weight_x (float, optional): weight for softmax loss. Default is 1.
         scheduler (LRScheduler, optional): if None, no learning rate decay will be performed.
         use_gpu (bool, optional): use gpu. Default is True.
         label_smooth (bool, optional): use label smoothing regularizer. Default is True.
-        top_drop_epoch (int, optional): epooch when to start using top drop batch Default -1 
 
     Examples::
         
@@ -47,9 +44,9 @@ class ImageTripletXentBatchDropEngine(engine.Engine):
             train_sampler='RandomIdentitySampler' # this is important
         )
         model = torchreid.models.build_model(
-            name='bdnet',
+            name='resnet50',
             num_classes=datamanager.num_train_pids,
-            loss='triplet_xent_batchdrop'
+            loss='triplet'
         )
         model = model.cuda()
         optimizer = torchreid.optim.build_optimizer(
@@ -60,7 +57,7 @@ class ImageTripletXentBatchDropEngine(engine.Engine):
             lr_scheduler='single_step',
             stepsize=20
         )
-        engine = torchreid.engine.ImageTripletXentBatchDropEngine(
+        engine = torchreid.engine.ImageTripletEngine(
             datamanager, model, optimizer, margin=0.3,
             weight_t=0.7, weight_x=1, scheduler=scheduler
         )
@@ -72,14 +69,16 @@ class ImageTripletXentBatchDropEngine(engine.Engine):
     """   
 
     def __init__(self, datamanager, model, optimizer, margin=0.3,
-                 weight_t=1, weight_x=1, weight_bd_t=1, weight_bd_x=1, scheduler=None, use_gpu=True,
+                 weight_t=1, weight_x=1, weight_db_t=1, weight_db_x=1, weight_b_db_t=1, weight_b_db_x=1, scheduler=None, use_gpu=True,
                  label_smooth=True, top_drop_epoch=-1):
-        super(ImageTripletXentBatchDropEngine, self).__init__(datamanager, model, optimizer, scheduler, use_gpu)
+        super(ImageTripletDropBatchDropBotFeaturesEngine, self).__init__(datamanager, model, optimizer, scheduler, use_gpu)
 
         self.weight_t = weight_t
         self.weight_x = weight_x
-        self.weight_bd_t = weight_bd_t
-        self.weight_bd_x = weight_bd_x
+        self.weight_db_t = weight_db_t
+        self.weight_db_x = weight_db_x
+        self.weight_b_db_t = weight_b_db_t
+        self.weight_b_db_x = weight_b_db_x
         self.top_drop_epoch = top_drop_epoch
 
         self.criterion_t = TripletLoss(margin=margin)
@@ -88,8 +87,14 @@ class ImageTripletXentBatchDropEngine(engine.Engine):
             use_gpu=self.use_gpu,
             label_smooth=label_smooth
         )
-        self.criterion_bd_t = TripletLoss(margin=margin)
-        self.criterion_bd_x = CrossEntropyLoss(
+        self.criterion_db_t = TripletLoss(margin=margin)
+        self.criterion_db_x = CrossEntropyLoss(
+            num_classes=self.datamanager.num_train_pids,
+            use_gpu=self.use_gpu,
+            label_smooth=label_smooth
+        )
+        self.criterion_b_db_t = TripletLoss(margin=margin)
+        self.criterion_b_db_x = CrossEntropyLoss(
             num_classes=self.datamanager.num_train_pids,
             use_gpu=self.use_gpu,
             label_smooth=label_smooth
@@ -98,8 +103,10 @@ class ImageTripletXentBatchDropEngine(engine.Engine):
     def train(self, epoch, max_epoch, trainloader, fixbase_epoch=0, open_layers=None, print_freq=10):
         losses_t = AverageMeter()
         losses_x = AverageMeter()
-        losses_bd_t = AverageMeter()
-        losses_bd_x = AverageMeter()
+        losses_db_t = AverageMeter()
+        losses_db_x = AverageMeter()
+        losses_b_db_t = AverageMeter()
+        losses_b_db_x = AverageMeter()
         accs = AverageMeter()
         batch_time = AverageMeter()
         data_time = AverageMeter()
@@ -123,12 +130,14 @@ class ImageTripletXentBatchDropEngine(engine.Engine):
 
             self.optimizer.zero_grad()
             drop_top = (self.top_drop_epoch != -1) and ((epoch+1) >= self.top_drop_epoch)
-            prelogits, features, db_prelogits, db_features = self.model(imgs, drop_top = drop_top)
-            loss_x = self._compute_loss(self.criterion_x, prelogits, pids)
+            outputs, features, db_prelogits, db_features, b_db_prelogits, b_db_features = self.model(imgs, drop_top = drop_top)
             loss_t = self._compute_loss(self.criterion_t, features, pids)
-            loss_bd_x = self._compute_loss(self.criterion_bd_x, db_prelogits, pids)
-            loss_bd_t = self._compute_loss(self.criterion_bd_t, db_features, pids)
-            loss = self.weight_t * loss_t + self.weight_x * loss_x + self.weight_bd_t * loss_bd_t + self.weight_bd_x * loss_bd_x
+            loss_x = self._compute_loss(self.criterion_x, outputs, pids)
+            loss_db_x = self._compute_loss(self.criterion_db_x, db_prelogits, pids)
+            loss_db_t = self._compute_loss(self.criterion_db_t, db_features, pids)
+            loss_b_db_x = self._compute_loss(self.criterion_b_db_x, b_db_prelogits, pids)
+            loss_b_db_t = self._compute_loss(self.criterion_b_db_t, b_db_features, pids)
+            loss = self.weight_t * loss_t + self.weight_x * loss_x + self.weight_db_t * loss_db_t + self.weight_db_x * loss_db_x + self.weight_b_db_t * loss_b_db_t + self.weight_b_db_x * loss_b_db_x
             loss.backward()
             self.optimizer.step()
 
@@ -136,9 +145,11 @@ class ImageTripletXentBatchDropEngine(engine.Engine):
 
             losses_t.update(loss_t.item(), pids.size(0))
             losses_x.update(loss_x.item(), pids.size(0))
-            losses_bd_t.update(loss_bd_t.item(), pids.size(0))
-            losses_bd_x.update(loss_bd_x.item(), pids.size(0))
-            accs.update(metrics.accuracy(prelogits, pids)[0].item())
+            losses_db_t.update(loss_db_t.item(), pids.size(0))
+            losses_db_x.update(loss_db_x.item(), pids.size(0))
+            losses_b_db_t.update(loss_b_db_t.item(), pids.size(0))
+            losses_b_db_x.update(loss_b_db_x.item(), pids.size(0))
+            accs.update(metrics.accuracy(outputs, pids)[0].item())
 
             if (batch_idx+1) % print_freq == 0:
                 # estimate remaining time
@@ -149,8 +160,10 @@ class ImageTripletXentBatchDropEngine(engine.Engine):
                       'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
                       'Loss_t {loss_t.val:.4f} ({loss_t.avg:.4f})\t'
                       'Loss_x {loss_x.val:.4f} ({loss_x.avg:.4f})\t'
-                      'loss_bd_t {loss_bd_t.val:.4f} ({loss_bd_t.avg:.4f})\t'
-                      'loss_bd_x {loss_bd_x.val:.4f} ({loss_bd_x.avg:.4f})\t'
+                      'Loss_db_t {loss_db_t.val:.4f} ({loss_db_t.avg:.4f})\t'
+                      'Loss_db_x {loss_db_x.val:.4f} ({loss_db_x.avg:.4f})\t'
+                      'Loss_b_db_t {loss_b_db_t.val:.4f} ({loss_b_db_t.avg:.4f})\t'
+                      'Loss_b_db_x {loss_b_db_x.val:.4f} ({loss_b_db_x.avg:.4f})\t'
                       'Acc glob{acc.val:.2f} ({acc.avg:.2f})\t'
                       'Lr {lr:.8f}\t'
                       'eta {eta}'.format(
@@ -159,8 +172,10 @@ class ImageTripletXentBatchDropEngine(engine.Engine):
                       data_time=data_time,
                       loss_t=losses_t,
                       loss_x=losses_x,
-                      loss_bd_t=losses_bd_t,
-                      loss_bd_x=losses_bd_x,
+                      loss_db_t=losses_db_t,
+                      loss_db_x=losses_db_x,
+                      loss_b_db_t=losses_b_db_t,
+                      loss_b_db_x=losses_b_db_x,
                       acc=accs,
                       lr=self.optimizer.param_groups[0]['lr'],
                       eta=eta_str
@@ -173,8 +188,10 @@ class ImageTripletXentBatchDropEngine(engine.Engine):
                 self.writer.add_scalar('Train/Data', data_time.avg, n_iter)
                 self.writer.add_scalar('Train/Loss_t', losses_t.avg, n_iter)
                 self.writer.add_scalar('Train/Loss_x', losses_x.avg, n_iter)
-                self.writer.add_scalar('Train/loss_bd_t', losses_bd_t.avg, n_iter)
-                self.writer.add_scalar('Train/loss_bd_x', losses_bd_x.avg, n_iter)
+                self.writer.add_scalar('Train/Loss_db_t', losses_db_t.avg, n_iter)
+                self.writer.add_scalar('Train/Loss_db_x', losses_db_x.avg, n_iter)
+                self.writer.add_scalar('Train/Loss_b_db_t', losses_b_db_t.avg, n_iter)
+                self.writer.add_scalar('Train/Loss_b_db_x', losses_b_db_x.avg, n_iter)
                 self.writer.add_scalar('Train/Acc glob', accs.avg, n_iter)
                 self.writer.add_scalar('Train/Lr', self.optimizer.param_groups[0]['lr'], n_iter)
             

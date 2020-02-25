@@ -2,5 +2,5 @@ from __future__ import absolute_import
 
 from .softmax import ImageSoftmaxEngine
 from .triplet import ImageTripletEngine
-from .triplet_xent_batchdrop import ImageTripletXentBatchDropEngine
-from .triplet_xent_top_batchdrop import ImageTripletXentTopBatchDropEngine
+from .triplet_dropbatch import ImageTripletDropBatchEngine
+from .triplet_dropbatch_dropbotfeatures import ImageTripletDropBatchDropBotFeaturesEngine

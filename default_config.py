@@ -86,18 +86,21 @@ def get_default_config():
     cfg.loss.triplet.margin = 0.3 # distance margin
     cfg.loss.triplet.weight_t =1. # weight to balance hard triplet loss
     cfg.loss.triplet.weight_x = 1. # weight to balance cross entropy loss
-    cfg.loss.batchdrop = CN()
-    cfg.loss.batchdrop.softmax = CN()
-    cfg.loss.batchdrop.triplet = CN()
-    cfg.loss.batchdrop.softmax.label_smooth = True # use label smoothing regularizer
-    cfg.loss.batchdrop.triplet.margin = 0.3 # distance margin
-    cfg.loss.batchdrop.weight_t = 1. # weight to balance triplet loss
-    cfg.loss.batchdrop.weight_x = 1. # weight to balance cross entropy loss
-    cfg.loss.batchdrop.weight_bd_t = 1. # weight to balance triplet loss in batchdrop stream
-    cfg.loss.batchdrop.weight_bd_x = 1. # weight to balance cross entropy loss in batchdrop stream
-    cfg.loss.batchdrop.weight_b_bd_t = 1. # weight to balance triplet loss in batchdrop stream after bootleneck
-    cfg.loss.batchdrop.weight_b_bd_x = 1. # weight to balance cross entropy loss in batchdrop stream after bootleneck
-    cfg.loss.batchdrop.top_drop_epoch = -1 # starting epoch to use top batchdrop
+    cfg.loss.triplet.weight_n = 1. # weight to balance cross entropy loss
+    cfg.loss.triplet.weight_x_parts = 1. # weight to balance cross entropy loss
+    cfg.loss.triplet.weight_t_parts = 1. # weight to balance triplet loss
+    cfg.loss.dropbatch = CN()
+    cfg.loss.dropbatch.weight_db_t = 1. # weight to balance cross entropy loss in dropbatch stream
+    cfg.loss.dropbatch.weight_db_x = 1. # weight to balance triplet loss in dropbatch stream
+    cfg.loss.dropbatch.weight_b_db_t = 1. # weight to balance cross entropy loss in dropbatch stream after bootleneck
+    cfg.loss.dropbatch.weight_b_db_x = 1. # weight to balance triplet loss in dropbatch stream after bootleneck
+    cfg.loss.dropbatch.top_drop_epoch = -1 # starting epoch to use dropbatch based on most activated parts
+    cfg.loss.npairs = CN()
+    cfg.loss.npairs.margin_sasc=0.3 # weight to balance same attention/same class in triplet parts loss
+    cfg.loss.npairs.margin_sadc=0.2 # weight to balance same attention/different class in triplet parts loss
+    cfg.loss.npairs.margin_dasc=0.4 # weight to balance different attention/same class in triplet parts loss
+    cfg.loss.separate = CN()
+    cfg.loss.separate.weight_separate=1. #weight for density maps separability losses
 
     # test
     cfg.test = CN()

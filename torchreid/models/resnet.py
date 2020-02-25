@@ -5,7 +5,7 @@ from __future__ import absolute_import
 from __future__ import division
 
 __all__ = ['resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152', 'resnext50_32x4d',
-           'resnext101_32x8d', 'resnet50_fc512']
+           'resnext101_32x8d', 'resnet50_fc512', 'resnet50_ls']
 
 import torch
 from torch import nn
@@ -358,9 +358,6 @@ def resnet50(num_classes, loss='softmax', pretrained=True, **kwargs):
     return model
 
 def resnet50_ls(num_classes, loss='softmax', pretrained=True, **kwargs):
-    '''
-    restnet50 + last stride = 1
-    '''
     model = ResNet(
         num_classes=num_classes,
         loss=loss,
