@@ -1,6 +1,6 @@
 model:
-  name: 'resnet50_bd'
-  load_weights: 'log/resnet50_bd_market1501_triplet_dropbatch/model.pth.tar-390'
+  name: 'bdnet'
+  load_weights: 'log/bdnet_market1501_triplet_dropbatch/model.pth.tar-360'
 
 data:
   type: 'image'
@@ -10,13 +10,16 @@ data:
   width: 128
   combineall: False
   transforms: ['random_flip', 'random_crop', 'random_erase']
-  save_dir: 'log/resnet50_bd_market1501_triplet_dropbatch'
+  save_dir: 'log/bdnet_market1501_triplet_dropbatch'
 
 sampler:
   train_sampler: 'RandomIdentitySampler'
 
+loss:
+  name: 'triplet_dropbatch'
+
 test:
-  batch_size: 32
+  batch_size: 150
   dist_metric: 'euclidean'
   normalize_feature: False
   evaluate: True
@@ -24,4 +27,9 @@ test:
   rerank: False
   visactmap: False
   visrank: False
+  visrankactiv: False
+  visrank_topk: 5
+  visrankactivthr: True
+  maskthr: 0.35
+
 

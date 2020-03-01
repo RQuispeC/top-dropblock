@@ -1,5 +1,5 @@
 model:
-  name: 'resnet50_bd'
+  name: 'bdnet'
   pretrained: True
 
 data:
@@ -10,7 +10,7 @@ data:
   width: 128
   combineall: False
   transforms: ['random_flip', 'random_crop', 'random_erase']
-  save_dir: 'log/resnet50_bd_market1501_triplet_dropbatch_nowarmpup'
+  save_dir: 'log/bdnet_market1501_triplet_dropbatch_nowarmpup'
 
 sampler:
   train_sampler: 'RandomIdentitySampler'
@@ -28,13 +28,13 @@ loss:
 
 train:
   optim: 'adam'
-  lr: 0.0003
+  lr: 1.
   max_epoch: 400
   batch_size: 32
   fixbase_epoch: 0
   open_layers: ['bottleneck_global', 'bottleneck_db', 'reduction_global', 'reduction_db','classifier_global', 'classifier_db', 'batch_drop']
-  lr_scheduler: 'multi_step'
-  stepsize: [60, 120]
+  lr_scheduler: 'warmup_db'
+  stepsize: [50, 200, 300]
 
 test:
   batch_size: 32

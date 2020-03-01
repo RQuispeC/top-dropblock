@@ -1,8 +1,7 @@
 from __future__ import absolute_import
 from __future__ import division
 
-#__all__ = ['TopBDNet_neck','TopBDNet', 'TopBDNet_botdropfeat', 'TopBDNet_neck_botdropfeat', 'TopBDNet_botdropfeat_doubot', 'TopBDNet_neck_botdropfeat_doubot']
-__all__ = ['top_bdnet_botdropfeat_doubot', 'top_bdnet_neck_botdropfeat_doubot']
+__all__ = ['top_bdnet_botdropfeat_doubot', 'top_bdnet_neck_botdropfeat_doubot', 'bdnet_neck', 'bdnet', 'top_bdnet_neck_doubot', 'top_bdnet_doubot']
 
 import torch
 from torch import nn
@@ -203,32 +202,7 @@ class TopBDNet(nn.Module):
         else:
             raise KeyError("Unsupported loss: {}".format(self.loss))
 
-def top_bdnet_botdropfeat(num_classes, loss='softmax', pretrained=True, **kwargs):
-    model = TopBDNet(
-        num_classes=num_classes,
-        loss=loss,
-        neck=False,
-        drop_height_ratio=0.33,
-        drop_width_ratio=1.0,
-        drop_bottleneck_features=True,
-        double_bottleneck=False
-        **kwargs
-    )
-    return model
-
-def top_bdnet_neck_botdropfeat(num_classes, loss='softmax', pretrained=True, **kwargs):
-    model = TopBDNet(
-        num_classes=num_classes,
-        loss=loss,
-        neck=True,
-        drop_height_ratio=0.33,
-        drop_width_ratio=1.0,
-        drop_bottleneck_features=True,
-        double_bottleneck=False,
-        **kwargs
-    )
-    return model
-
+# top bdnet
 def top_bdnet_botdropfeat_doubot(num_classes, loss='softmax', pretrained=True, **kwargs):
     model = TopBDNet(
         num_classes=num_classes,
@@ -251,6 +225,60 @@ def top_bdnet_neck_botdropfeat_doubot(num_classes, loss='softmax', pretrained=Tr
         drop_width_ratio=1.0,
         drop_bottleneck_features=True,
         double_bottleneck=True,
+        **kwargs
+    )
+    return model
+
+# top bdnet without third stream
+def top_bdnet_doubot(num_classes, loss='softmax', pretrained=True, **kwargs):
+    model = TopBDNet(
+        num_classes=num_classes,
+        loss=loss,
+        neck=False,
+        drop_height_ratio=0.33,
+        drop_width_ratio=1.0,
+        drop_bottleneck_features=False,
+        double_bottleneck=True,
+        **kwargs
+    )
+    return model
+
+def top_bdnet_neck_doubot(num_classes, loss='softmax', pretrained=True, **kwargs):
+    model = TopBDNet(
+        num_classes=num_classes,
+        loss=loss,
+        neck=True,
+        drop_height_ratio=0.33,
+        drop_width_ratio=1.0,
+        drop_bottleneck_features=False,
+        double_bottleneck=True,
+        **kwargs
+    )
+    return model
+
+#batch dropblock
+def bdnet(num_classes, loss='softmax', pretrained=True, **kwargs):
+    model = TopBDNet(
+        num_classes=num_classes,
+        loss=loss,
+        neck=False,
+        drop_height_ratio=0.33,
+        drop_width_ratio=1.0,
+        drop_bottleneck_features=False,
+        double_bottleneck=False,
+        **kwargs
+    )
+    return model
+
+def bdnet_neck(num_classes, loss='softmax', pretrained=True, **kwargs):
+    model = TopBDNet(
+        num_classes=num_classes,
+        loss=loss,
+        neck=True,
+        drop_height_ratio=0.33,
+        drop_width_ratio=1.0,
+        drop_bottleneck_features=False,
+        double_bottleneck=False,
         **kwargs
     )
     return model

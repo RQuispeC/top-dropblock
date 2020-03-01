@@ -4,16 +4,16 @@ model:
 
 data:
   type: 'image'
-  sources: ['cuhk03']
-  targets: ['cuhk03']
+  sources: ['market1501']
+  targets: ['market1501']
   height: 384
   width: 128
   combineall: False
   transforms: ['random_flip', 'random_crop', 'random_erase']
-  save_dir: 'log/top_bdnet_neck_botdropfeat_doubot_cuhk03_detected_triplet_dropbatch_dropbotfeatures_topdrop_0'
+  save_dir: 'log/top_bdnet_neck_botdropfeat_doubot_market1501_triplet_dropbatch_dropbotfeatures_topdrop_360'
 
 cuhk03:
-  labeled_images: False
+  labeled_images: True
 
 sampler:
   train_sampler: 'RandomIdentitySampler'
@@ -30,7 +30,7 @@ loss:
     weight_db_x: 1.0
     weight_b_db_t: 1.0
     weight_b_db_x: 1.0
-    top_drop_epoch: 0
+    top_drop_epoch: 360
 
 train:
   optim: 'adam'
