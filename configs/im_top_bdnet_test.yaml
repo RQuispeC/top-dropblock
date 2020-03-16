@@ -1,16 +1,16 @@
 model:
   name: 'top_bdnet_neck_botdropfeat_doubot'
-  load_weights: 'log/top_bdnet_neck_botdropfeat_doubot_market1501_triplet_dropbatch_dropbotfeatures_topdrop_0/best_model.pth.tar'
+  load_weights: 'log/top_bdnet_neck_botdropfeat_doubot_cuhk03_detected_triplet_dropbatch_dropbotfeatures_topdrop_360/model.pth.tar-360'
 
 data:
   type: 'image'
-  sources: ['market1501']
-  targets: ['market1501']
+  sources: ['cuhk03']
+  targets: ['cuhk03']
   height: 384
   width: 128
   combineall: False
   transforms: ['random_flip', 'random_crop', 'random_erase']
-  save_dir: 'log/top_bdnet_neck_botdropfeat_doubot_market1501_triplet_dropbatch_dropbotfeatures_topdrop_0'
+  save_dir: 'log/top_bdnet_neck_botdropfeat_doubot_cuhk03_detected_triplet_dropbatch_dropbotfeatures_topdrop_360/'
 
 cuhk03:
   labeled_images: False
@@ -19,16 +19,16 @@ sampler:
   train_sampler: 'RandomIdentitySampler'
 
 test:
-  batch_size: 150
+  batch_size: 600
   dist_metric: 'euclidean'
   normalize_feature: False
   evaluate: True
   eval_freq: 60
-  rerank: False
+  rerank: True
   visactmap: False
   visrank: False
   visrankactiv: False
   visrank_topk: 5
-  visrankactivthr: True
+  visrankactivthr: False
   maskthr: 0.35
 

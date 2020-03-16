@@ -1,16 +1,16 @@
 model:
-  name: 'resnet50_bd_neck_botdropfeat_doubot'
+  name: 'top_bdnet_neck_doubot'
   pretrained: True
 
 data:
   type: 'image'
-  sources: ['cuhk03']
-  targets: ['cuhk03']
+  sources: ['dukemtmcreid']
+  targets: ['dukemtmcreid']
   height: 384
   width: 128
   combineall: False
   transforms: ['random_flip', 'random_crop', 'random_erase']
-  save_dir: 'log/resnet50_bd_neck_botdropfeat_doubot_cuhk03_detected_triplet_dropbatch_dropbotfeatures_topdrop_0'
+  save_dir: 'log/top_bdnet_neck_doubot_dukemtmcreid_triplet_dropbatch_topdrop_0'
 
 cuhk03:
   labeled_images: False
@@ -19,7 +19,7 @@ sampler:
   train_sampler: 'RandomIdentitySampler'
 
 loss:
-  name: 'triplet_dropbatch_dropbotfeatures'
+  name: 'triplet_dropbatch'
   softmax:
     label_smooth: True
   triplet:
@@ -28,8 +28,6 @@ loss:
   dropbatch:
     weight_db_t: 1.0
     weight_db_x: 1.0
-    weight_b_db_t: 1.0
-    weight_b_db_x: 1.0
     top_drop_epoch: 0
 
 train:
