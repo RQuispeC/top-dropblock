@@ -1,10 +1,11 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-__version__ = '1.0.0'
-__author__ = 'Kaiyang Zhou'
-__description__ = 'Deep learning person re-identification in PyTorch'
-__url__ = 'https://github.com/KaiyangZhou/deep-person-reid'
+__version__ == '0.1'
+__author__ = 'Rodolfo Quispe'
+__description__ = 'Top Batch Dropblock for Person Re-Identification'
+__url__ = 'https://github.com/RQuispeC/top-batch-dropblock'
+__based_on__ = 'https://github.com/KaiyangZhou/deep-person-reid'
 
 from torchreid import (
     engine,
