@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-__version__ == '0.1'
 __author__ = 'Rodolfo Quispe'
 __description__ = 'Top Batch Dropblock for Person Re-Identification'
 __url__ = 'https://github.com/RQuispeC/top-batch-dropblock'

@@ -9,4 +9,4 @@ matplotlib
 tb-nightly
 future
 yacs
-gdown
+imageio
