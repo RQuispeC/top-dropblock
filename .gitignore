@@ -4,6 +4,7 @@ tmp
 .vscode
 .ptignore
 pt-config
+pt
 
 
 # Byte-compiled / optimized / DLL files

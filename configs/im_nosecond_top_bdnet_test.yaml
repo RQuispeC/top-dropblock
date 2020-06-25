@@ -1,6 +1,6 @@
 model:
-  name: 'bdnet'
-  load_weights: 'log/bdnet_market1501_triplet_dropbatch/model.pth.tar-360'
+  name: 'nodropnet_neck'
+  load_weights: 'log/nodropnet_neck_market1501_triplet_dropbatch_0/best_model.pth.tar'
 
 data:
   type: 'image'
@@ -10,12 +10,15 @@ data:
   width: 128
   combineall: False
   transforms: ['random_flip', 'random_crop', 'random_erase']
-  save_dir: 'log/bdnet_market1501_triplet_dropbatch'
+  save_dir: 'log/nodropnet_neck_market1501_triplet_dropbatch_0'
+
+cuhk03:
+  labeled_images: False
 
 sampler:
   train_sampler: 'RandomIdentitySampler'
 
-loss:
+  loss:
   name: 'triplet_dropbatch'
 
 test:
@@ -31,5 +34,4 @@ test:
   visrank_topk: 5
   visrankactivthr: True
   maskthr: 0.35
-
 

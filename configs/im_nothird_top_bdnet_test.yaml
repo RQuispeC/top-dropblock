@@ -22,7 +22,7 @@ sampler:
   name: 'triplet_dropbatch'
 
 test:
-  batch_size: 150
+  batch_size: 600
   dist_metric: 'euclidean'
   normalize_feature: False
   evaluate: True

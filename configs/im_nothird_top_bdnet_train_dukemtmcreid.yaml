@@ -4,13 +4,13 @@ model:
 
 data:
   type: 'image'
-  sources: ['market1501']
-  targets: ['market1501']
+  sources: ['dukemtmcreid']
+  targets: ['dukemtmcreid']
   height: 384
   width: 128
   combineall: False
   transforms: ['random_flip', 'random_crop', 'random_erase']
-  save_dir: 'log/top_bdnet_neck_doubot_market1501_triplet_dropbatch'
+  save_dir: 'log/top_bdnet_neck_doubot_dukemtmcreid_triplet_dropbatch'
 
 cuhk03:
   labeled_images: False

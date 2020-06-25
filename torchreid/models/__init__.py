@@ -35,6 +35,8 @@ __model_factory = {
     'top_bdnet_doubot': top_bdnet_doubot,
     'top_bdnet_botdropfeat_doubot': top_bdnet_botdropfeat_doubot, 
     'top_bdnet_neck_botdropfeat_doubot': top_bdnet_neck_botdropfeat_doubot,
+    'nodropnet_neck': nodropnet_neck,
+    'nodropnet': nodropnet,
     'resnet50_ls': resnet50_ls,
     'resnet101': resnet101,
     'resnet152': resnet152,

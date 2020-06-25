@@ -1,19 +1,19 @@
 model:
-  name: 'top_bdnet_neck_doubot'
+  name: 'bdnet'
   pretrained: True
 
 data:
   type: 'image'
-  sources: ['market1501']
-  targets: ['market1501']
+  sources: ['cuhk03']
+  targets: ['cuhk03']
   height: 384
   width: 128
   combineall: False
   transforms: ['random_flip', 'random_crop', 'random_erase']
-  save_dir: 'log/top_bdnet_neck_doubot_market1501_triplet_dropbatch'
+  save_dir: 'log/bdnet_cuhk03_triplet_dropbatch'
 
 cuhk03:
-  labeled_images: False
+  labeled_images: True
 
 sampler:
   train_sampler: 'RandomIdentitySampler'
@@ -35,7 +35,7 @@ train:
   max_epoch: 400
   batch_size: 64
   fixbase_epoch: 0
-  open_layers: ['bottleneck_global', 'bottleneck_db', 'reduction_global', 'reduction_db','classifier_global', 'classifier_db', 'batch_drop', 'bottleneck_drop_bottleneck_features', 'classifier_drop_bottleneck']
+  open_layers: ['bottleneck_global', 'bottleneck_db', 'reduction_global', 'reduction_db','classifier_global', 'classifier_db', 'batch_drop']
   lr_scheduler: 'warmup_db'
   stepsize: [50, 200, 300]
 

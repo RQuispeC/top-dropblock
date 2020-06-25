@@ -16,7 +16,7 @@ def warmup_db(ep, stepsize):
         lr = 1e-4
     else:
         lr = 1e-5
-    lr /= 4
+    lr /= 2
     return lr
 
 def warmup_sb(ep, stepsize):
@@ -29,7 +29,7 @@ def warmup_sb(ep, stepsize):
         lr = 3.5e-5
     else:
         lr = 3.5e-6
-    lr /= 4
+    lr /= 2
     return lr
 
 def build_lr_scheduler(optimizer, lr_scheduler='single_step', stepsize=1, gamma=0.1, max_epoch=1):
