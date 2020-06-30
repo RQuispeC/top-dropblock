@@ -18,7 +18,7 @@ import torchvision
 from torch.utils.tensorboard import SummaryWriter
 
 import torchreid
-from torchreid.utils import AverageMeter, visualize_ranked_results, save_checkpoint, re_ranking, mkdir_if_missing, visualize_ranked_activation_results, visualize_ranked_threshold_activation_results
+from torchreid.utils import AverageMeter, visualize_ranked_results, save_checkpoint, re_ranking, mkdir_if_missing, visualize_ranked_activation_results, visualize_ranked_threshold_activation_results, visualize_ranked_mask_activation_results
 from torchreid.losses import DeepSupervision
 from torchreid import metrics
 
@@ -54,7 +54,7 @@ class Engine(object):
     def run(self, save_dir='log', max_epoch=0, start_epoch=0, fixbase_epoch=0, open_layers=None,
             start_eval=0, eval_freq=-1, test_only=False, print_freq=10,
             dist_metric='euclidean', normalize_feature=False, visrank=False, visrankactiv=False, visrankactivthr=False, maskthr=0.7, visrank_topk=10,
-            use_metric_cuhk03=False, ranks=[1, 5, 10, 20], rerank=False, visactmap=False, vispartmap=False):
+            use_metric_cuhk03=False, ranks=[1, 5, 10, 20], rerank=False, visactmap=False, vispartmap=False, visdrop=False, visdroptype='random'):
         r"""A unified pipeline for training and evaluating a model.
 
         Args:
@@ -97,6 +97,9 @@ class Engine(object):
         if visrankactivthr and not test_only:
             raise ValueError('visrankactivthr=True is valid only if test_only=True')
 
+        if visdrop and not test_only:
+            raise ValueError('visdrop=True is valid only if test_only=True')
+
         if test_only:
             self.test(
                 0,
@@ -111,7 +114,9 @@ class Engine(object):
                 ranks=ranks,
                 rerank=rerank,
                 maskthr=maskthr,
-                visrankactivthr=visrankactivthr
+                visrankactivthr=visrankactivthr,
+                visdrop=visdrop,
+                visdroptype=visdroptype
             )
             return
 
@@ -193,7 +198,7 @@ class Engine(object):
 
     def test(self, epoch, testloader, dist_metric='euclidean', normalize_feature=False,
              visrank=False, visrankactiv = False, visrank_topk=10, save_dir='', use_metric_cuhk03=False,
-             ranks=[1, 5, 10, 20], rerank=False, maskthr=0.7, visrankactivthr=False):
+             ranks=[1, 5, 10, 20], rerank=False, maskthr=0.7, visrankactivthr=False, visdrop=False, visdroptype = 'random'):
         r"""Tests model on target datasets.
 
         .. note::
@@ -229,7 +234,9 @@ class Engine(object):
                 ranks=ranks,
                 rerank=rerank,
                 maskthr=maskthr,
-                visrankactivthr=visrankactivthr
+                visrankactivthr=visrankactivthr,
+                visdrop=visdrop,
+                visdroptype=visdroptype
             )
         
         return rank1
@@ -238,47 +245,53 @@ class Engine(object):
     def _evaluate(self, epoch, dataset_name='', queryloader=None, galleryloader=None,
                   dist_metric='euclidean', normalize_feature=False, visrank=False, visrankactiv = False,
                   visrank_topk=10, save_dir='', use_metric_cuhk03=False, ranks=[1, 5, 10, 20],
-                  rerank=False, visrankactivthr = False, maskthr=0.7):
+                  rerank=False, visrankactivthr = False, maskthr=0.7, visdrop=False, visdroptype='random'):
         batch_time = AverageMeter()
 
         print('Extracting features from query set ...')
-        qf, qa, q_pids, q_camids = [], [], [], [] # query features, query activations, query person IDs and query camera IDs
-        for batch_idx, data in enumerate(queryloader):
+        qf, qa, q_pids, q_camids, qm = [], [], [], [], [] # query features, query activations, query person IDs, query camera IDs and image drop masks
+        for _, data in enumerate(queryloader):
             imgs, pids, camids = self._parse_data_for_eval(data)
             if self.use_gpu:
                 imgs = imgs.cuda()
             end = time.time()
             features = self._extract_features(imgs)
             activations = self._extract_activations(imgs)
+            dropmask = self._extract_drop_masks(imgs, visdrop, visdroptype)
             batch_time.update(time.time() - end)
             features = features.data.cpu()
             qf.append(features)
             qa.append(torch.Tensor(activations))
+            qm.append(dropmask)
             q_pids.extend(pids)
             q_camids.extend(camids)
         qf = torch.cat(qf, 0)
+        qm = torch.cat(qm, 0)
         qa = torch.cat(qa, 0)
         q_pids = np.asarray(q_pids)
         q_camids = np.asarray(q_camids)
         print('Done, obtained {}-by-{} matrix'.format(qf.size(0), qf.size(1)))
 
         print('Extracting features from gallery set ...')
-        gf, ga, g_pids, g_camids = [], [], [], [] # gallery features, gallery activations,  gallery person IDs and gallery camera IDs
+        gf, ga, g_pids, g_camids, gm = [], [], [], [], [] # gallery features, gallery activations,  gallery person IDs, gallery camera IDs and image drop masks
         end = time.time()
-        for batch_idx, data in enumerate(galleryloader):
+        for _, data in enumerate(galleryloader):
             imgs, pids, camids = self._parse_data_for_eval(data)
             if self.use_gpu:
                 imgs = imgs.cuda()
             end = time.time()
             features = self._extract_features(imgs)
             activations = self._extract_activations(imgs)
+            dropmask = self._extract_drop_masks(imgs, visdrop, visdroptype)
             batch_time.update(time.time() - end)
             features = features.data.cpu()
             gf.append(features)
             ga.append(torch.Tensor(activations))
             g_pids.extend(pids)
             g_camids.extend(camids)
+            gm.append(dropmask)
         gf = torch.cat(gf, 0)
+        gm = torch.cat(gm, 0)
         ga = torch.cat(ga, 0)
         g_pids = np.asarray(g_pids)
         g_camids = np.asarray(g_camids)
@@ -368,6 +381,20 @@ class Engine(object):
                 save_dir=osp.join(save_dir, 'visrankactivthr_'+dataset_name),
                 topk=visrank_topk,
                 threshold=maskthr
+            )
+        if visdrop:
+            visualize_ranked_mask_activation_results(
+                distmat,
+                qa,
+                ga,
+                qm,
+                gm,
+                self.datamanager.return_testdataset_by_name(dataset_name),
+                self.datamanager.data_type,
+                width=self.datamanager.width,
+                height=self.datamanager.height,
+                save_dir=osp.join(save_dir, 'visdrop_'+dataset_name),
+                topk=visrank_topk
             )
 
         return cmc[0]
@@ -602,6 +629,19 @@ class Engine(object):
             am = 255 * (am - np.max(am)) / (np.max(am) - np.min(am) + 1e-12)
             activations.append(am)
         return np.array(activations)
+
+    def _extract_drop_masks(self, images, visdrop, visdroptype):
+        self.model.eval()
+        drop_top = (visdroptype == 'top')
+        outputs = self.model(input, drop_top=drop_top, visdrop=visdrop)
+        masks = []
+        for j in range(outputs.size(0)):
+            # drop masks
+            dm = outputs[j, ...].cpu().numpy()
+            dm = cv2.resize(dm, (self.datamanager.width, self.datamanager.height))
+            dm = 255 * dm
+            masks.append(dm)
+        return masks
 
     def _parse_data_for_train(self, data):
         imgs = data[0]

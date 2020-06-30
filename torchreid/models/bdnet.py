@@ -19,8 +19,8 @@ class BatchDrop(nn.Module):
         self.h_ratio = h_ratio
         self.w_ratio = w_ratio
     
-    def forward(self, x):
-        if self.training:
+    def forward(self, x, visdrop=False):
+        if self.training or visdrop:
             h, w = x.size()[-2:]
             rh = round(self.h_ratio * h)
             rw = round(self.w_ratio * w)
@@ -28,6 +28,8 @@ class BatchDrop(nn.Module):
             sy = random.randint(0, w-rw)
             mask = x.new_ones(x.size())
             mask[:, :, sx:sx+rh, sy:sy+rw] = 0
+            if visdrop:
+                return mask
             x = x * mask
         return x
 
@@ -36,8 +38,8 @@ class BatchDropTop(nn.Module):
         super(BatchDropTop, self).__init__()
         self.h_ratio = h_ratio
     
-    def forward(self, x):
-        if self.training:
+    def forward(self, x, visdrop=False):
+        if self.training or visdrop:
             b, c, h, w = x.size()
             rh = round(self.h_ratio * h)
             act = (x**2).sum(1)
@@ -56,6 +58,8 @@ class BatchDropTop(nn.Module):
             mask = torch.repeat_interleave(mask, w, 1).view(b, h, w)
             mask = torch.repeat_interleave(mask, c, 0).view(b, c, h, w)
             if x.is_cuda: mask = mask.cuda()
+            if visdrop:
+                return mask
             x = x * mask
         return x
 
@@ -84,13 +88,14 @@ class BatchFeatureErase_Top(nn.Module):
         self.drop_batch_drop_basic = BatchDrop(h_ratio, w_ratio)
         self.drop_batch_drop_top = BatchDropTop(h_ratio)
 
-    def forward(self, x, drop_top=False, bottleneck_features = False):
+    def forward(self, x, drop_top=False, bottleneck_features = False, visdrop=False):
         features = self.drop_batch_bottleneck(x)
         if drop_top:
-            x = self.drop_batch_drop_top(features)
+            x = self.drop_batch_drop_top(features, visdrop=visdrop)
         else:
-            x = self.drop_batch_drop_basic(features)
-
+            x = self.drop_batch_drop_basic(features, visdrop=visdrop)
+        if visdrop:
+            return x #x is dropmask
         if bottleneck_features:
             return x, features
         else:
@@ -158,10 +163,13 @@ class TopBDNet(nn.Module):
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
 
-    def forward(self, x, return_featuremaps = False, drop_top=False):
+    def forward(self, x, return_featuremaps = False, drop_top=False, visdrop=False):
         x = self.base(x)
         if return_featuremaps:
             return x
+        if visdrop: #return dropmask
+            drop_mask = self.batch_drop(x, drop_top=drop_top, visdrop=visdrop)
+            return drop_mask
 
         if self.drop_bottleneck_features:
             drop_x, t_drop_bottleneck_features = self.batch_drop(x, drop_top=drop_top, bottleneck_features = True)

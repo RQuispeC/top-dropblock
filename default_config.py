@@ -119,6 +119,8 @@ def get_default_config():
     cfg.test.vispartmap = False # visualize CNN activation maps for parts
     cfg.test.visrankactivthr = False # visualize CNN activation maps for parts with masking over activations
     cfg.test.maskthr = 0.7 #thresolhd for masking activations
+    cfg.test.visdrop = False #plot drop masks
+    cfg.test.visdroptype = 'top' #type of drop used for plot
 
     return cfg
 
@@ -221,4 +223,6 @@ def engine_run_kwargs(cfg):
         'visrankactiv': cfg.test.visrankactiv,
         'visrankactivthr': cfg.test.visrankactivthr,
         'maskthr': cfg.test.maskthr,
+        'visdrop': cfg.test.visdrop,
+        'visdroptype': cfg.test.visdroptype
     }
