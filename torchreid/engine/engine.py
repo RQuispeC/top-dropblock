@@ -262,7 +262,7 @@ class Engine(object):
             features = features.data.cpu()
             qf.append(features)
             qa.append(torch.Tensor(activations))
-            qm.append(dropmask)
+            qm.append(torch.Tensor(dropmask))
             q_pids.extend(pids)
             q_camids.extend(camids)
         qf = torch.cat(qf, 0)
@@ -287,9 +287,9 @@ class Engine(object):
             features = features.data.cpu()
             gf.append(features)
             ga.append(torch.Tensor(activations))
+            gm.append(torch.Tensor(dropmask))
             g_pids.extend(pids)
             g_camids.extend(camids)
-            gm.append(dropmask)
         gf = torch.cat(gf, 0)
         gm = torch.cat(gm, 0)
         ga = torch.cat(ga, 0)
@@ -393,7 +393,7 @@ class Engine(object):
                 self.datamanager.data_type,
                 width=self.datamanager.width,
                 height=self.datamanager.height,
-                save_dir=osp.join(save_dir, 'visdrop_'+dataset_name),
+                save_dir=osp.join(save_dir, 'visdrop_{}_{}'.format(visdroptype, dataset_name)),
                 topk=visrank_topk
             )
 
@@ -630,18 +630,18 @@ class Engine(object):
             activations.append(am)
         return np.array(activations)
 
-    def _extract_drop_masks(self, images, visdrop, visdroptype):
+    def _extract_drop_masks(self, input, visdrop, visdroptype):
         self.model.eval()
         drop_top = (visdroptype == 'top')
         outputs = self.model(input, drop_top=drop_top, visdrop=visdrop)
+        outputs = outputs.mean(1)
         masks = []
         for j in range(outputs.size(0)):
             # drop masks
             dm = outputs[j, ...].cpu().numpy()
             dm = cv2.resize(dm, (self.datamanager.width, self.datamanager.height))
-            dm = 255 * dm
             masks.append(dm)
-        return masks
+        return np.array(masks)
 
     def _parse_data_for_train(self, data):
         imgs = data[0]

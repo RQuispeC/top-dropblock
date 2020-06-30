@@ -357,7 +357,7 @@ def visualize_ranked_mask_activation_results(distmat, query_act, gallery_act, qu
     mkdir_if_missing(save_dir)
 
     print('# query: {}\n# gallery {}'.format(num_q, num_g))
-    print('Visualizing top-{} ranks ...'.format(topk))
+    print('Visualizing dropmask for top-{} ranks ...'.format(topk))
     
     query, gallery = dataset
     assert num_q == len(query)
@@ -388,7 +388,7 @@ def visualize_ranked_mask_activation_results(distmat, query_act, gallery_act, qu
             overlapped = qimg * 0.5 + qact * 0.5
             overlapped[overlapped>255] = 255
             overlapped = overlapped.astype(np.uint8)
-            overlapped_mask = qimg * 0.5 + mask * 0.5
+            overlapped_mask = qimg * mask
             overlapped_mask = overlapped_mask.astype(np.uint8)
             grid_img[:height, :width, :] = qimg
             grid_img[height+10: 2*height+10, :width, :] = overlapped
@@ -425,7 +425,7 @@ def visualize_ranked_mask_activation_results(distmat, query_act, gallery_act, qu
                     overlapped = gimg * 0.5 + gact * 0.5
                     overlapped[overlapped>255] = 255
                     overlapped = overlapped.astype(np.uint8)
-                    overlapped_mask = gimg * 0.5 + mask * 0.5
+                    overlapped_mask = gimg * mask
                     overlapped_mask = overlapped_mask.astype(np.uint8)
                     grid_img[:height, start: end, :] = gimg
                     grid_img[height+10: 2*height+10, start: end, :] = overlapped
