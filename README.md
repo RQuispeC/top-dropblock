@@ -63,7 +63,9 @@ python scripts/main.py \
 
 To output activations maps update 'visrankactivthr: True' or 'visrankactiv: True' on the config files.
 
-![](activation_sample.jpg)
+<p align="center">
+    <img src="activation_sample.jpg" alt="drawing" width="500"/>
+</p>
 
 Results
 --------
