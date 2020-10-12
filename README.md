@@ -61,6 +61,10 @@ python scripts/main.py \
 --gpu-devices 0
 ```
 
+To output activations maps update 'visrankactivthr: True' or 'visrankactiv: True' on the config files.
+
+![](activation_sample.jpg)
+
 Results
 --------
 
