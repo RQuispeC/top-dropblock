@@ -1,76 +1,46 @@
-Top Batch DropBlock for Person Re-Identification
+Top-DB-Net: Top DropBlock for Activation Enhancement in Person Re-Identification
 ===========
+
+This repository implements 'Top-DB-Net: Top DropBlock for Activation Enhancement in Person Re-Identification' presented at International Conference in Pattern Recognition (ICPR 2020)
+
+![](architecture.png)
 
 ## Installation
 
 Make sure your [conda](https://www.anaconda.com/distribution/) is installed.
 
-
 ```bash
+# cd to your preferred directory and clone this repo
+git clone https://github.com/KaiyangZhou/deep-person-reid.git
 
-    # cd to your preferred directory and clone this repo
-    git clone https://github.com/KaiyangZhou/deep-person-reid.git
+# create environment
+cd deep-person-reid/
+conda create --name torchreid python=3.7
+conda activate torchreid
 
-    # create environment
-    cd deep-person-reid/
-    conda create --name torchreid python=3.7
-    conda activate torchreid
+# install dependencies
+# make sure `which python` and `which pip` point to the correct path
+pip install -r requirements.txt
 
-    # install dependencies
-    # make sure `which python` and `which pip` point to the correct path
-    pip install -r requirements.txt
+# install torch and torchvision (select the proper cuda version to suit your machine)
+conda install pytorch torchvision cudatoolkit=9.0 -c pytorch
 
-    # install torch and torchvision (select the proper cuda version to suit your machine)
-    conda install pytorch torchvision cudatoolkit=9.0 -c pytorch
-
-    # install torchreid (don't need to re-build it if you modify the source code)
-    python setup.py develop
+# install torchreid (don't need to re-build it if you modify the source code)
+python setup.py develop
 ```
 
 ## Train and Test
 
-We made available training and testing scripts inside `configs`, update `configs/im_top_bdnet_train.yaml` accordingly to the dataset you are using:
-
-For Market1501
-```yaml
-data:
-    sources: ['market1501']
-    targets: ['market1501']
-```
-For DukeMTMC-ReID
-```yaml
-data:
-    sources: ['dukemtmcreid']
-    targets: ['dukemtmcreid']
-```
-For CUHK03 Labeled version
-```yaml
-data:
-    sources: ['cuhk03']
-    targets: ['cuhk03']
-cuhk03:
-    labeled_images: True
-```
-For CUHK03 Detected version
-```yaml
-data:
-    sources: ['cuhk03']
-    targets: ['cuhk03']
-cuhk03:
-    labeled_images: False
-```
-
-To train Top-BDBnet, do
+We made available config files for training and testing inside `configs`. For instance, to train Top-DBnet on Market-1501, run:
 
 ```bash
-
 python scripts/main.py \
---config-file configs/im_top_bdnet_train.yaml \
+--config-file configs/im_top_bdnet_train_market1501.yaml \
 --root $PATH_TO_DATA \
 --gpu-devices 0
 ```
 
-To test Top-BDBnet, download the provided trained models and update `configs/im_top_bdnet_test.yaml` with the dataset and path to saved model:
+To test Top-DBnet, update `configs/im_top_bdnet_test.yaml` with the dataset name and path to saved model:
 
 ```yaml
 model:
@@ -79,6 +49,7 @@ model:
 test:
     rerank: False # Update this if you want to use re-ranking
     visrank: False # Update this if you want to visualize activation maps
+    targets: ['cuhk03'] # Dataset name, e.g. ('cuhk03', 'market1501', 'dukemtmcreid')
 ```
 
 Then do
@@ -93,23 +64,23 @@ python scripts/main.py \
 Results
 --------
 
-| Dataset       | mAP  | Rank-1 | mAP (RK)| Rank-1 (RK)  | Models|
-| ------------- |:----:|:------:|:-------:|:------------:|:-----:|
-| Market1501    | 86.7 | 95.3   | 94.4    | 95.8         |[link](#)|
-| DukeMTMC-ReID | 75.1 | 87.8   | 88.7    | 90.4         |[link](#)|
-| CUHK03(L)     | 75.6 | 79.1   | 88.2    | 86.6         |[link](#)|
-| CUHK03(D)     | 72.8 | 77.0   | 86.0    | 84.6         |[link](#)|
+| Dataset       | mAP  | Rank-1 | mAP (RK)| Rank-1 (RK)  | 
+| ------------- |:----:|:------:|:-------:|:------------:|
+| Market1501    | 95.8 | 94.9   | 94.1    | 95.5         |
+| DukeMTMC-ReID | 73.5 | 87.5   | 88.6    | 90.9         |
+| CUHK03(L)     | 75.4 | 79.4   | 88.5    | 86.7         |
+| CUHK03(D)     | 74.2 | 77.3   | 86.9    | 85.7         |
 
 
 Citation
 ---------
-If you find this code useful to your research, please cite the following publication.
+If you find this work useful to your research, please cite the following publication.
 
-```bash
-@article{quispe2020topbdnet,
-  title={Top Batch DropBlock for Person Re-Identification},
+```
+@article{quispe2020topdnet,
+  title={Top-DB-Net: Top DropBlock for Activation Enhancement in Person Re-Identification},
   author={Rodolfo Quispe and Helio Pedrini},
-  journal={},
+  journal={25th International Conference on Pattern Recognition (ICPR2020)},
   year={2020}
 }
 ```
