@@ -89,8 +89,8 @@ If you find this work useful to your research, please cite the following publica
 ```
 @article{quispe2020topdnet,
   title={Top-DB-Net: Top DropBlock for Activation Enhancement in Person Re-Identification},
-  author={Rodolfo Quispe and Helio Pedrini},
-  journal={25th International Conference on Pattern Recognition (ICPR2020)},
+  author={Quispe, Rodolfo and Pedrini, Helio},
+  journal={25th International Conference on Pattern Recognition},
   year={2020}
 }
 ```
