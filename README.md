@@ -65,7 +65,7 @@ python main.py \
 --root $PATH_TO_DATA
 ```
 
-To output activations maps update 'visrankactivthr: True' or 'visrankactiv: True' on the config files.
+To output activations maps update `visrankactivthr: True` or `visrankactiv: True` on the config files.
 
 <p align="center">
     <img src="activation_sample.jpg" alt="drawing" width="500"/>
