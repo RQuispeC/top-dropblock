@@ -34,10 +34,9 @@ python setup.py develop
 We made available config files for training and testing inside `configs`. For instance, to train Top-DBnet on Market-1501, run:
 
 ```bash
-python scripts/main.py \
+python main.py \
 --config-file configs/im_top_bdnet_train_market1501.yaml \
---root $PATH_TO_DATA \
---gpu-devices 0
+--root $PATH_TO_DATA
 ```
 
 To test Top-DBnet, update `configs/im_top_bdnet_test.yaml` with the dataset name and path to saved model:
@@ -55,10 +54,9 @@ test:
 Then do
 
 ```bash
-python scripts/main.py \
+python main.py \
 --config-file configs/im_top_bdnet_test.yaml \
---root $PATH_TO_DATA \
---gpu-devices 0
+--root $PATH_TO_DATA
 ```
 
 To output activations maps update 'visrankactivthr: True' or 'visrankactiv: True' on the config files.
@@ -72,7 +70,7 @@ Results
 
 | Dataset       | mAP  | Rank-1 | mAP (RK)| Rank-1 (RK)  | 
 | ------------- |:----:|:------:|:-------:|:------------:|
-| Market1501    | 95.8 | 94.9   | 94.1    | 95.5         |
+| Market1501    | 85.8 | 94.9   | 94.1    | 95.5         |
 | DukeMTMC-ReID | 73.5 | 87.5   | 88.6    | 90.9         |
 | CUHK03(L)     | 75.4 | 79.4   | 88.5    | 86.7         |
 | CUHK03(D)     | 74.2 | 77.3   | 86.9    | 85.7         |
