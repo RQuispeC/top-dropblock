@@ -93,3 +93,8 @@ If you find this work useful to your research, please cite the following publica
 ```
 
 This repo is based on [deep-person-reid](https://github.com/KaiyangZhou/deep-person-reid), for further questions regarding data setup and others take a look to their [documentation](https://kaiyangzhou.github.io/deep-person-reid/).
+
+
+News
+--------
+* Updated figure of architecture to match code implementation (refer to [#4](https://github.com/RQuispeC/top-dropblock/issues/4))
