@@ -61,6 +61,8 @@ python main.py \
 --config-file configs/im_top_bdnet_test.yaml \
 --root $PATH_TO_DATA
 ```
+Trained models are available [here](https://drive.google.com/drive/folders/1GJLUnYw-UUyM6kgJHCeFszxq3_3JTeTy?usp=sharing)
+
 
 To output activations maps update `visrankactivthr: True` or `visrankactiv: True` on the config files.
 
